@@ -1,0 +1,396 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { type Transaction } from "@shared/schema";
+import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap } from "lucide-react";
+
+const categoryIcons = {
+  'food': ShoppingCart,
+  'transport': Car,
+  'utilities': Zap,
+  'salary': Plus,
+  'freelance': Plus,
+  'investment': Plus,
+  'entertainment': Eye,
+  'healthcare': Plus,
+  'other-income': Plus,
+  'other-expense': Trash2,
+};
+
+const categoryLabels = {
+  'salary': 'Salario',
+  'freelance': 'Trabajo Independiente',
+  'investment': 'Inversiones',
+  'other-income': 'Otros Ingresos',
+  'food': 'Alimentación',
+  'transport': 'Transporte',
+  'utilities': 'Servicios',
+  'entertainment': 'Entretenimiento',
+  'healthcare': 'Salud',
+  'other-expense': 'Otros Gastos',
+};
+
+interface TransactionTableProps {
+  showFilters?: boolean;
+}
+
+export function TransactionTable({ showFilters = true }: TransactionTableProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState({
+    search: '',
+    type: '',
+    category: '',
+    period: 'month',
+  });
+  const [pagination, setPagination] = useState({
+    limit: 25,
+    offset: 0,
+  });
+
+  const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
+    queryKey: ['/api/transactions', filters, pagination],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        ...filters,
+        limit: pagination.limit.toString(),
+        offset: pagination.offset.toString(),
+      });
+      
+      Object.keys(params).forEach(key => {
+        if (!params.get(key)) {
+          params.delete(key);
+        }
+      });
+
+      const response = await fetch(`/api/transactions?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
+    },
+  });
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest('DELETE', `/api/transactions/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      toast({
+        title: "Transacción eliminada",
+        description: "La transacción se ha eliminado correctamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la transacción.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const formatCurrency = (amount: string, type: string) => {
+    const value = parseFloat(amount);
+    const formatted = new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+    return type === 'income' ? `+${formatted}` : `-${formatted}`;
+  };
+
+  const formatDate = (date: string) => {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(date));
+  };
+
+  const getCategoryBadgeColor = (category: string, type: string) => {
+    if (type === 'income') return 'bg-green-100 text-green-800';
+    
+    const colorMap: Record<string, string> = {
+      'food': 'bg-blue-100 text-blue-800',
+      'transport': 'bg-yellow-100 text-yellow-800',
+      'utilities': 'bg-purple-100 text-purple-800',
+      'entertainment': 'bg-pink-100 text-pink-800',
+      'healthcare': 'bg-red-100 text-red-800',
+      'other-expense': 'bg-gray-100 text-gray-800',
+    };
+    
+    return colorMap[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar esta transacción?')) {
+      deleteTransactionMutation.mutate(id);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-16 bg-muted rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {showFilters && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Buscar transacciones..."
+                    className="pl-10"
+                    value={filters.search}
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Tipo</label>
+                <Select
+                  value={filters.type}
+                  onValueChange={(value) => setFilters({ ...filters, type: value })}
+                >
+                  <SelectTrigger data-testid="select-type-filter">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="income">Ingresos</SelectItem>
+                    <SelectItem value="expense">Gastos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Categoría</label>
+                <Select
+                  value={filters.category}
+                  onValueChange={(value) => setFilters({ ...filters, category: value })}
+                >
+                  <SelectTrigger data-testid="select-category-filter">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas</SelectItem>
+                    {Object.entries(categoryLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Período</label>
+                <Select
+                  value={filters.period}
+                  onValueChange={(value) => setFilters({ ...filters, period: value })}
+                >
+                  <SelectTrigger data-testid="select-period-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todo el tiempo</SelectItem>
+                    <SelectItem value="week">Esta semana</SelectItem>
+                    <SelectItem value="month">Este mes</SelectItem>
+                    <SelectItem value="quarter">Este trimestre</SelectItem>
+                    <SelectItem value="year">Este año</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="border-b">
+          <div className="flex justify-between items-center">
+            <CardTitle>Historial de Transacciones</CardTitle>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Mostrar:</span>
+              <Select
+                value={pagination.limit.toString()}
+                onValueChange={(value) => setPagination({ ...pagination, limit: parseInt(value) })}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {transactions.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">No se encontraron transacciones</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted">
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-center">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction) => {
+                    const IconComponent = categoryIcons[transaction.category as keyof typeof categoryIcons] || Eye;
+                    return (
+                      <TableRow
+                        key={transaction.id}
+                        className="hover:bg-accent transition-colors"
+                        data-testid={`row-transaction-${transaction.id}`}
+                      >
+                        <TableCell className="whitespace-nowrap">
+                          <div className="text-sm">
+                            {formatDate(transaction.date.toString()).split(',')[0]}<br />
+                            <span className="text-muted-foreground">
+                              {formatDate(transaction.date.toString()).split(',')[1]}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                            }`}>
+                              <IconComponent className={`w-4 h-4 ${
+                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                              }`} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium" data-testid={`text-description-${transaction.id}`}>
+                                {transaction.description}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {transaction.receiptUrl ? 'Procesado por OCR' : 'Manual'}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={getCategoryBadgeColor(transaction.category, transaction.type)}
+                            data-testid={`badge-category-${transaction.id}`}
+                          >
+                            {categoryLabels[transaction.category as keyof typeof categoryLabels]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span
+                            className={`text-sm font-semibold ${
+                              transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            }`}
+                            data-testid={`text-amount-${transaction.id}`}
+                          >
+                            {formatCurrency(transaction.amount, transaction.type)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary hover:text-primary/80"
+                              data-testid={`button-edit-${transaction.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-foreground"
+                              data-testid={`button-view-${transaction.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive/80"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              disabled={deleteTransactionMutation.isPending}
+                              data-testid={`button-delete-${transaction.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {transactions.length > 0 && (
+            <div className="px-6 py-4 border-t flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {pagination.offset + 1} a {Math.min(pagination.offset + pagination.limit, pagination.offset + transactions.length)} transacciones
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(p => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))}
+                  disabled={pagination.offset === 0}
+                  data-testid="button-previous-page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(p => ({ ...p, offset: p.offset + p.limit }))}
+                  disabled={transactions.length < pagination.limit}
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
