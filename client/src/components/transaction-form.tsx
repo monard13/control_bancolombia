@@ -107,7 +107,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="expense" id="expense" />
-                        <Label htmlFor="expense">Gasto</Label>
+                        <Label htmlFor="expense">Egreso</Label>
                       </div>
                     </RadioGroup>
                   </FormControl>

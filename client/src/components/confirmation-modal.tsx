@@ -49,7 +49,7 @@ export function ConfirmationModal({
       type: transactionType,
       amount: extractedData.amount?.toString() || '',
       description: extractedData.description || '',
-      category: extractedData.category || (transactionType === 'income' ? 'INGRESO' : 'EGRESO'),
+      category: transactionType === 'income' ? 'INGRESO' : 'EGRESO',
       date: extractedData.date || new Date().toISOString().split('T')[0],
       extractedData: extractedData,
       confidence: extractedData.confidence.toString(),
@@ -158,30 +158,6 @@ export function ConfirmationModal({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoría Sugerida</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-extracted-category">
-                          <SelectValue placeholder="Seleccionar categoría" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories[transactionType].map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            {category.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
@@ -220,7 +196,7 @@ export function ConfirmationModal({
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="expense" id="modal-expense" />
-                          <Label htmlFor="modal-expense">Gasto</Label>
+                          <Label htmlFor="modal-expense">Egreso</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="income" id="modal-income" />
