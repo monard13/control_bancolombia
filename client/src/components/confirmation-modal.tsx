@@ -170,6 +170,8 @@ export function ConfirmationModal({
                         type="date"
                         data-testid="input-extracted-date"
                         {...field}
+                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -188,7 +190,7 @@ export function ConfirmationModal({
                         onValueChange={(value: 'income' | 'expense') => {
                           field.onChange(value);
                           setTransactionType(value);
-                          form.setValue('category', '');
+                          form.setValue('category', value === 'income' ? 'INGRESO' : 'EGRESO');
                         }}
                         value={field.value}
                         className="flex space-x-4"
