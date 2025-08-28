@@ -30,8 +30,8 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
     search: '',
-    type: '',
-    category: '',
+    type: 'all',
+    category: 'all',
     period: 'month',
   });
   const [pagination, setPagination] = useState({
@@ -165,9 +165,9 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="income">Ingresos</SelectItem>
-                    <SelectItem value="expense">Gastos</SelectItem>
+                    <SelectItem value="expense">Egresos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -182,7 +182,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {Object.entries(categoryLabels).map(([value, label]) => (
                       <SelectItem key={value} value={value}>{label}</SelectItem>
                     ))}

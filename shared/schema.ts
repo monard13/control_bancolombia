@@ -44,7 +44,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
 });
 
 export const transactionFilterSchema = z.object({
-  type: z.enum(['income', 'expense']).optional(),
+  type: z.enum(['income', 'expense', 'all']).optional(),
   category: z.string().optional(),
   search: z.string().optional(),
   period: z.enum(['week', 'month', 'quarter', 'year', 'all']).optional(),

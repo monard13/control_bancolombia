@@ -71,8 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (filters.endDate) endDate = new Date(filters.endDate);
 
       const transactions = await storage.getTransactions({
-        type: filters.type,
-        category: filters.category,
+        type: filters.type === 'all' ? undefined : filters.type,
+        category: filters.category === 'all' ? undefined : filters.category,
         search: filters.search,
         startDate,
         endDate,
