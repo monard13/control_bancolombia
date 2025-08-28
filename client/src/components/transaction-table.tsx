@@ -12,29 +12,13 @@ import { type Transaction } from "@shared/schema";
 import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap } from "lucide-react";
 
 const categoryIcons = {
-  'food': ShoppingCart,
-  'transport': Car,
-  'utilities': Zap,
-  'salary': Plus,
-  'freelance': Plus,
-  'investment': Plus,
-  'entertainment': Eye,
-  'healthcare': Plus,
-  'other-income': Plus,
-  'other-expense': Trash2,
+  'INGRESO': Plus,
+  'EGRESO': Trash2,
 };
 
 const categoryLabels = {
-  'salary': 'Salario',
-  'freelance': 'Trabajo Independiente',
-  'investment': 'Inversiones',
-  'other-income': 'Otros Ingresos',
-  'food': 'Alimentación',
-  'transport': 'Transporte',
-  'utilities': 'Servicios',
-  'entertainment': 'Entretenimiento',
-  'healthcare': 'Salud',
-  'other-expense': 'Otros Gastos',
+  'INGRESO': 'INGRESO',
+  'EGRESO': 'EGRESO',
 };
 
 interface TransactionTableProps {

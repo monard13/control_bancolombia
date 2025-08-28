@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         extractedData = {
           amount: null,
           description: ocrText.substring(0, 100), // First 100 chars as description
-          category: 'other-expense',
+          category: 'EGRESO', // Default to expense for most receipts
           date: new Date().toISOString().split('T')[0],
           vendor: '',
           confidence: 0.5, // Medium confidence since it's OCR-only

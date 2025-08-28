@@ -17,9 +17,9 @@ export class AIService {
             content: `You are an expert at extracting financial transaction data from receipt text. 
             Analyze the OCR text and extract transaction information. 
             
-            Categories available:
-            - Income: salary, freelance, investment, other-income
-            - Expenses: food, transport, utilities, entertainment, healthcare, other-expense
+            Categories available (use exactly these values):
+            - INGRESO (for income/money received)
+            - EGRESO (for expenses/money spent)
             
             Respond with JSON in this exact format:
             {
@@ -61,41 +61,19 @@ export class AIService {
   }
 
   private mapToValidCategory(category: string): string {
-    const categoryMap: Record<string, string> = {
-      'food': 'food',
-      'alimentacion': 'food',
-      'comida': 'food',
-      'supermercado': 'food',
-      'restaurant': 'food',
-      'transport': 'transport',
-      'transporte': 'transport',
-      'gasolina': 'transport',
-      'gas': 'transport',
-      'combustible': 'transport',
-      'taxi': 'transport',
-      'utilities': 'utilities',
-      'servicios': 'utilities',
-      'electricity': 'utilities',
-      'water': 'utilities',
-      'internet': 'utilities',
-      'phone': 'utilities',
-      'entertainment': 'entertainment',
-      'entretenimiento': 'entertainment',
-      'cine': 'entertainment',
-      'healthcare': 'healthcare',
-      'salud': 'healthcare',
-      'medical': 'healthcare',
-      'pharmacy': 'healthcare',
-      'salary': 'salary',
-      'salario': 'salary',
-      'sueldo': 'salary',
-      'freelance': 'freelance',
-      'investment': 'investment',
-      'inversion': 'investment'
-    };
+    // Map various terms to our simplified categories
+    const incomeKeywords = ['salary', 'salario', 'sueldo', 'freelance', 'investment', 'inversion', 'income', 'ingreso', 'pago', 'cobro'];
+    const expenseKeywords = ['food', 'alimentacion', 'comida', 'transport', 'transporte', 'utilities', 'servicios', 'entertainment', 'entretenimiento', 'healthcare', 'salud', 'expense', 'egreso', 'gasto', 'compra'];
 
     const normalizedCategory = category?.toLowerCase() || '';
-    return categoryMap[normalizedCategory] || 'other-expense';
+    
+    // Check if it's an income-related term
+    if (incomeKeywords.some(keyword => normalizedCategory.includes(keyword))) {
+      return 'INGRESO';
+    }
+    
+    // Default to expense for most transactions (receipts are typically expenses)
+    return 'EGRESO';
   }
 }
 

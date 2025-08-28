@@ -17,18 +17,10 @@ import { Check, X } from "lucide-react";
 
 const categories = {
   income: [
-    { value: 'salary', label: 'Salario' },
-    { value: 'freelance', label: 'Trabajo Independiente' },
-    { value: 'investment', label: 'Inversiones' },
-    { value: 'other-income', label: 'Otros Ingresos' },
+    { value: 'INGRESO', label: 'INGRESO' },
   ],
   expense: [
-    { value: 'food', label: 'Alimentación' },
-    { value: 'transport', label: 'Transporte' },
-    { value: 'utilities', label: 'Servicios' },
-    { value: 'entertainment', label: 'Entretenimiento' },
-    { value: 'healthcare', label: 'Salud' },
-    { value: 'other-expense', label: 'Otros Gastos' },
+    { value: 'EGRESO', label: 'EGRESO' },
   ],
 };
 
@@ -57,7 +49,7 @@ export function ConfirmationModal({
       type: transactionType,
       amount: extractedData.amount?.toString() || '',
       description: extractedData.description || '',
-      category: extractedData.category || '',
+      category: extractedData.category || (transactionType === 'income' ? 'INGRESO' : 'EGRESO'),
       date: extractedData.date || new Date().toISOString().split('T')[0],
       extractedData: extractedData,
       confidence: extractedData.confidence.toString(),

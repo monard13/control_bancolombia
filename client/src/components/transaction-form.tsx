@@ -16,18 +16,10 @@ import { Save, X } from "lucide-react";
 
 const categories = {
   income: [
-    { value: 'salary', label: 'Salario' },
-    { value: 'freelance', label: 'Trabajo Independiente' },
-    { value: 'investment', label: 'Inversiones' },
-    { value: 'other-income', label: 'Otros Ingresos' },
+    { value: 'INGRESO', label: 'INGRESO' },
   ],
   expense: [
-    { value: 'food', label: 'Alimentación' },
-    { value: 'transport', label: 'Transporte' },
-    { value: 'utilities', label: 'Servicios' },
-    { value: 'entertainment', label: 'Entretenimiento' },
-    { value: 'healthcare', label: 'Salud' },
-    { value: 'other-expense', label: 'Otros Gastos' },
+    { value: 'EGRESO', label: 'EGRESO' },
   ],
 };
 
@@ -49,7 +41,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       type: 'expense',
       amount: '',
       description: '',
-      category: '',
+      category: transactionType === 'income' ? 'INGRESO' : 'EGRESO',
       date: new Date().toISOString().split('T')[0],
       ...initialData,
     },
