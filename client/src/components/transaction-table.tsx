@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
-import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap } from "lucide-react";
+import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download } from "lucide-react";
 
 const categoryIcons = {
   'INGRESO': Plus,
@@ -121,6 +121,67 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     }
   };
 
+  const exportToCSV = () => {
+    if (transactions.length === 0) {
+      toast({
+        title: "Sin datos",
+        description: "No hay transacciones para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Crear las cabeceras del CSV
+    const headers = ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Cantidad'];
+    
+    // Convertir transacciones a filas CSV
+    const csvRows = transactions.map(transaction => {
+      const date = new Date(transaction.date).toLocaleDateString('es-ES');
+      const amount = parseFloat(transaction.amount);
+      const type = transaction.type === 'income' ? 'INGRESO' : 'EGRESO';
+      
+      return [
+        date,
+        `"${transaction.description}"`, // Comillas para manejar descripciones con comas
+        transaction.category,
+        type,
+        amount.toFixed(2)
+      ].join(',');
+    });
+
+    // Crear el contenido CSV completo
+    const csvContent = [headers.join(','), ...csvRows].join('\n');
+    
+    // Crear y descargar el archivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      
+      // Generar nombre de archivo basado en el período
+      const periodLabel = filters.period === 'all' ? 'todos' : 
+                         filters.period === 'week' ? 'semana' :
+                         filters.period === 'month' ? 'mes' :
+                         filters.period === 'quarter' ? 'trimestre' :
+                         filters.period === 'year' ? 'año' : 'periodo';
+      
+      const fileName = `transacciones_${periodLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.setAttribute('download', fileName);
+      
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exportación exitosa",
+        description: `Se descargó el archivo: ${fileName}`,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -217,22 +278,34 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <CardTitle>Historial de Transacciones</CardTitle>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">Mostrar:</span>
-              <Select
-                value={pagination.limit.toString()}
-                onValueChange={(value) => setPagination({ ...pagination, limit: parseInt(value) })}
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={exportToCSV}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+                data-testid="button-export-csv"
               >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
+                <Download className="w-4 h-4" />
+                <span>Exportar CSV</span>
+              </Button>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">Mostrar:</span>
+                <Select
+                  value={pagination.limit.toString()}
+                  onValueChange={(value) => setPagination({ ...pagination, limit: parseInt(value) })}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
