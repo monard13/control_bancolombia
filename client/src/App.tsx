@@ -11,6 +11,7 @@ import AddTransaction from "@/pages/add-transaction";
 import UploadReceipt from "@/pages/upload-receipt";
 import Transactions from "@/pages/transactions";
 import { ChartPie, Plus, Camera, List, ChartLine, Bell, Settings } from "lucide-react";
+import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 
 const navigation = [
   { id: 'dashboard', label: 'Dashboard', icon: ChartPie, path: '/' },
@@ -25,9 +26,17 @@ function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <ChartLine className="text-primary text-2xl w-8 h-8" />
-              <h1 className="text-xl font-bold text-foreground">FinanceTracker</h1>
+            <div className="flex items-center space-x-3">
+              <img 
+                src={baseSolutionLogo} 
+                alt="Base Solution SAS Logo" 
+                className="w-10 h-10 object-contain"
+                data-testid="logo-base-solution"
+              />
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-foreground">FinanceTracker</h1>
+                <p className="text-xs text-muted-foreground font-medium">BASE SOLUTION SAS</p>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-4">
