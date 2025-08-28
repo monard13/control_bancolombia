@@ -192,13 +192,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No text could be extracted from the image" });
       }
 
-      // Extract structured data using AI
-      const extractedData = await aiService.extractTransactionData(ocrText);
+      // Extract structured data using AI (with fallback)
+      let extractedData;
+      let aiAvailable = true;
+      
+      try {
+        extractedData = await aiService.extractTransactionData(ocrText);
+      } catch (aiError) {
+        console.log('AI service unavailable, falling back to OCR-only mode:', aiError.message);
+        aiAvailable = false;
+        
+        // Fallback: provide basic structure with OCR text
+        extractedData = {
+          amount: null,
+          description: ocrText.substring(0, 100), // First 100 chars as description
+          category: 'other-expense',
+          date: new Date().toISOString().split('T')[0],
+          vendor: '',
+          confidence: 0.5, // Medium confidence since it's OCR-only
+          rawText: ocrText
+        };
+      }
 
       res.json({
         extractedData,
         ocrText,
-        message: "Receipt processed successfully"
+        aiAvailable,
+        message: aiAvailable 
+          ? "Receipt processed successfully with AI analysis"
+          : "Receipt processed with OCR only - AI analysis unavailable (check OpenAI credits)"
       });
 
     } catch (error) {

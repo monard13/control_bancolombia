@@ -11,6 +11,7 @@ interface ProcessingResult {
   extractedData: ExtractedData;
   ocrText: string;
   message: string;
+  aiAvailable?: boolean;
 }
 
 export default function UploadReceipt() {
@@ -69,7 +70,10 @@ export default function UploadReceipt() {
 
       toast({
         title: "Comprobante procesado",
-        description: "La información ha sido extraída correctamente.",
+        description: result.aiAvailable 
+          ? "La información ha sido extraída correctamente con IA."
+          : "Texto extraído con OCR. Por favor revisa y completa los datos manualmente (IA no disponible).",
+        variant: result.aiAvailable ? "default" : "destructive",
       });
     },
     onError: (error: Error) => {
