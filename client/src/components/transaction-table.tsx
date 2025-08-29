@@ -174,7 +174,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       description: editForm.description,
       amount: parseFloat(editForm.amount),
       type: editForm.type,
-      category: editForm.category,
+      category: editForm.type === 'income' ? 'INGRESO' : 'EGRESO', // Auto-assign category based on type
       date: new Date(editForm.date).toISOString(),
     };
 

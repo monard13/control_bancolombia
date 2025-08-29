@@ -124,6 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(transaction);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Validation error updating transaction:', error.errors);
         res.status(400).json({ error: error.errors });
       } else {
         console.error('Error updating transaction:', error);
