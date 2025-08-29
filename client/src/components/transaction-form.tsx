@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { insertTransactionSchema, type InsertTransaction } from "@shared/schema";
+import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { Save, X, Upload, FileText } from "lucide-react";
 
@@ -46,10 +47,17 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
     receiptUrl?: string;
   };
 
+  // Create a form-specific schema that handles string dates
+  const formSchema = z.object({
+    type: z.enum(['income', 'expense']),
+    amount: z.string().min(1, 'El monto es requerido'),
+    description: z.string().min(1, 'La descripción es requerida'),
+    date: z.string().min(1, 'La fecha es requerida'),
+    receiptUrl: z.string().optional(),
+  });
+
   const form = useForm<FormData>({
-    resolver: zodResolver(insertTransactionSchema.extend({
-      date: z.string() // Form expects string for date input
-    })),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       type: initialData?.type || 'expense',
       amount: initialData?.amount || '',
@@ -133,7 +141,10 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       };
       
       // Then create the transaction with the receipt URL and auto-assigned category
-      await createTransactionMutation.mutateAsync(transactionData);
+      await createTransactionMutation.mutateAsync({
+        ...transactionData,
+        receiptUrl: receiptUrl || undefined, // Ensure undefined instead of null
+      });
     } catch (error) {
       toast({
         title: "Error",

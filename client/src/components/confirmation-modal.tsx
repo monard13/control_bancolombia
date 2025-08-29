@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { insertTransactionSchema, type InsertTransaction, type ExtractedData } from "@shared/schema";
+import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { Check, X } from "lucide-react";
 
@@ -56,10 +57,19 @@ export function ConfirmationModal({
     confidence?: string;
   };
 
+  // Create a form-specific schema that handles string dates
+  const formSchema = z.object({
+    type: z.enum(['income', 'expense']),
+    amount: z.string().min(1, 'El monto es requerido'),
+    description: z.string().min(1, 'La descripción es requerida'),
+    date: z.string().min(1, 'La fecha es requerida'),
+    receiptUrl: z.string().optional(),
+    extractedData: z.any().optional(),
+    confidence: z.string().optional(),
+  });
+
   const form = useForm<FormData>({
-    resolver: zodResolver(insertTransactionSchema.extend({
-      date: z.string() // Form expects string for date input
-    })),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       type: transactionType,
       amount: extractedData.amount?.toString() || '',
@@ -67,7 +77,7 @@ export function ConfirmationModal({
       date: extractedData.date || new Date().toISOString().split('T')[0],
       receiptUrl: receiptUrl || undefined,
       extractedData: extractedData,
-      confidence: extractedData.confidence.toString(),
+      confidence: (extractedData.confidence ?? 0.5).toString(),
     },
   });
 
@@ -190,7 +200,7 @@ export function ConfirmationModal({
                         type="date"
                         data-testid="input-extracted-date"
                         {...field}
-                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value || ''}
+                        value={typeof field.value === 'string' ? field.value : ''}
                         onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
