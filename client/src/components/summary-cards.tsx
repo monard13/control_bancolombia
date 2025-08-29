@@ -12,6 +12,21 @@ interface SummaryData {
 export function SummaryCards() {
   const { data: summary, isLoading } = useQuery<SummaryData>({
     queryKey: ['/api/transactions/summary'],
+    queryFn: async () => {
+      const response = await fetch('/api/transactions/summary', {
+        cache: 'no-cache', // Force fresh data
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch summary');
+      return response.json();
+    },
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    staleTime: 0, // Data is immediately stale
+    gcTime: 0, // Don't keep in cache
   });
 
   const formatCurrency = (amount: number) => {

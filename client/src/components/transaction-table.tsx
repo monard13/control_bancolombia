@@ -54,10 +54,20 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
         }
       });
 
-      const response = await fetch(`/api/transactions?${params}`);
+      const response = await fetch(`/api/transactions?${params}`, {
+        cache: 'no-cache', // Force fresh data
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch transactions');
       return response.json();
     },
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    staleTime: 0, // Data is immediately stale
+    gcTime: 0, // Don't keep in cache
   });
 
   const deleteTransactionMutation = useMutation({
