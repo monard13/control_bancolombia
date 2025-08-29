@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
-import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download } from "lucide-react";
+import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus } from "lucide-react";
 
 const categoryIcons = {
   'INGRESO': Plus,
-  'EGRESO': Trash2,
+  'EGRESO': Minus,
 };
 
 const categoryLabels = {
