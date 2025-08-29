@@ -190,10 +190,13 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
 
   const reconcileTransactionMutation = useMutation({
     mutationFn: async ({ id, reconciled }: { id: string; reconciled: boolean }) => {
-      return apiRequest(`/api/transactions/${id}`, {
+      const response = await fetch(`/api/transactions/${id}`, {
         method: 'PATCH',
-        body: { reconciled },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reconciled }),
       });
+      if (!response.ok) throw new Error('Failed to update reconciliation status');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });

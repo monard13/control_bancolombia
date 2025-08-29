@@ -61,6 +61,7 @@ export class MemStorage implements IStorage {
     const transaction: Transaction = {
       id,
       ...insertTransaction,
+      reconciled: insertTransaction.reconciled ?? false, // Default to false if not provided
       date: insertTransaction.date ? new Date(insertTransaction.date) : now,
       createdAt: now,
       updatedAt: now,
@@ -129,6 +130,8 @@ export class MemStorage implements IStorage {
     const updated: Transaction = {
       ...transaction,
       ...updates,
+      // Handle boolean fields explicitly
+      reconciled: updates.reconciled !== undefined ? updates.reconciled : transaction.reconciled,
       date: updates.date ? new Date(updates.date) : transaction.date,
       updatedAt: new Date(),
     };
