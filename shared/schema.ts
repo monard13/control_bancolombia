@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, decimal, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -19,6 +19,7 @@ export const transactions = pgTable("transactions", {
   receiptUrl: text("receipt_url"),
   extractedData: jsonb("extracted_data"), // OCR and AI extracted data
   confidence: decimal("confidence", { precision: 3, scale: 2 }), // AI confidence score 0-1
+  reconciled: boolean("reconciled").notNull().default(false), // Reconciliation status
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -37,6 +38,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   receiptUrl: true,
   extractedData: true,
   confidence: true,
+  reconciled: true,
 }).extend({
   type: z.enum(['income', 'expense']),
   category: z.enum(['INGRESO', 'EGRESO']),

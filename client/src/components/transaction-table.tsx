@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
-import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus, FileText } from "lucide-react";
+import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus, FileText, Check } from "lucide-react";
 
 const categoryIcons = {
   'INGRESO': Plus,
@@ -186,6 +186,30 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
 
   const handleViewReceipt = (receiptUrl: string) => {
     window.open(receiptUrl, '_blank');
+  };
+
+  const reconcileTransactionMutation = useMutation({
+    mutationFn: async ({ id, reconciled }: { id: string; reconciled: boolean }) => {
+      return apiRequest(`/api/transactions/${id}`, {
+        method: 'PATCH',
+        body: { reconciled },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de conciliación",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleReconciled = (id: string, currentState: boolean) => {
+    reconcileTransactionMutation.mutate({ id, reconciled: !currentState });
   };
 
   const exportToCSV = () => {
@@ -373,6 +397,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                     <TableHead>Descripción</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-center">Conciliado</TableHead>
                     <TableHead className="text-center">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -420,6 +445,21 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                           >
                             {formatCurrency(transaction.amount, transaction.type)}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`w-8 h-8 p-0 rounded-full transition-colors ${
+                              transaction.reconciled
+                                ? 'bg-green-100 hover:bg-green-200 text-green-600'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-400'
+                            }`}
+                            onClick={() => handleToggleReconciled(transaction.id, transaction.reconciled)}
+                            data-testid={`button-reconcile-${transaction.id}`}
+                          >
+                            {transaction.reconciled && <Check className="w-4 h-4" />}
+                          </Button>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">

@@ -125,6 +125,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Partial update transaction (for reconciliation status, etc.)
+  app.patch("/api/transactions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = insertTransactionSchema.partial().parse(req.body);
+      const transaction = await storage.updateTransaction(id, updates);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      
+      res.json(transaction);
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      res.status(500).json({ error: "Failed to update transaction" });
+    }
+  });
+
   // Delete transaction
   app.delete("/api/transactions/:id", async (req, res) => {
     try {
