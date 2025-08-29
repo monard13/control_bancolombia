@@ -24,7 +24,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
   const [filters, setFilters] = useState({
     search: '',
     type: 'all',
-    period: 'month',
+    period: 'all', // Changed from 'month' to 'all' to show all transactions by default
   });
   const [pagination, setPagination] = useState({
     limit: 25,
