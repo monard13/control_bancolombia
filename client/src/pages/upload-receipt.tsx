@@ -12,6 +12,7 @@ interface ProcessingResult {
   ocrText: string;
   message: string;
   aiAvailable?: boolean;
+  receiptUrl?: string | null;
 }
 
 export default function UploadReceipt() {
@@ -21,6 +22,7 @@ export default function UploadReceipt() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [recentUploads, setRecentUploads] = useState<Array<{
     id: string;
     name: string;
@@ -48,6 +50,7 @@ export default function UploadReceipt() {
     },
     onSuccess: (result, file) => {
       setExtractedData(result.extractedData);
+      setReceiptUrl(result.receiptUrl || null);
       
       // Create preview URL for the image
       if (file.type.startsWith('image/')) {
@@ -296,6 +299,7 @@ export default function UploadReceipt() {
           }}
           extractedData={extractedData}
           receiptImage={receiptImage || undefined}
+          receiptUrl={receiptUrl || undefined}
         />
       )}
     </div>

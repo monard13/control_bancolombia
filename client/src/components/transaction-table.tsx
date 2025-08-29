@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
-import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus } from "lucide-react";
+import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus, FileText } from "lucide-react";
 
 const categoryIcons = {
   'INGRESO': Plus,
@@ -182,6 +182,10 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       id: editingTransaction.id,
       data: updatedData,
     });
+  };
+
+  const handleViewReceipt = (receiptUrl: string) => {
+    window.open(receiptUrl, '_blank');
   };
 
   const exportToCSV = () => {
@@ -503,6 +507,17 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                 </form>
                               </DialogContent>
                             </Dialog>
+                            {transaction.receiptUrl && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-700"
+                                onClick={() => handleViewReceipt(transaction.receiptUrl!)}
+                                data-testid={`button-receipt-${transaction.id}`}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"

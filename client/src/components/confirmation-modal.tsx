@@ -29,13 +29,15 @@ interface ConfirmationModalProps {
   onClose: () => void;
   extractedData: ExtractedData;
   receiptImage?: string;
+  receiptUrl?: string;
 }
 
 export function ConfirmationModal({
   open,
   onClose,
   extractedData,
-  receiptImage
+  receiptImage,
+  receiptUrl
 }: ConfirmationModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,6 +53,7 @@ export function ConfirmationModal({
       description: extractedData.description || '',
       category: transactionType === 'income' ? 'INGRESO' : 'EGRESO',
       date: extractedData.date || new Date().toISOString().split('T')[0],
+      receiptUrl: receiptUrl || undefined,
       extractedData: extractedData,
       confidence: extractedData.confidence.toString(),
     },
