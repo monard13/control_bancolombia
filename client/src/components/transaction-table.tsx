@@ -85,7 +85,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     const value = parseFloat(amount);
     const formatted = new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'COP'
     }).format(value);
     return type === 'income' ? `+${formatted}` : `-${formatted}`;
   };

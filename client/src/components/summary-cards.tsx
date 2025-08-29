@@ -17,7 +17,7 @@ export function SummaryCards() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'COP'
     }).format(amount);
   };
 
