@@ -45,8 +45,21 @@ export function ConfirmationModal({
     extractedData.amount && extractedData.amount > 0 ? 'expense' : 'expense'
   );
 
-  const form = useForm<InsertTransaction>({
-    resolver: zodResolver(insertTransactionSchema),
+  // Local form type that matches HTML form fields exactly
+  type FormData = {
+    type: 'income' | 'expense';
+    amount: string;
+    description: string;
+    date: string; // HTML date input expects string
+    receiptUrl?: string;
+    extractedData?: any;
+    confidence?: string;
+  };
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(insertTransactionSchema.extend({
+      date: z.string() // Form expects string for date input
+    })),
     defaultValues: {
       type: transactionType,
       amount: extractedData.amount?.toString() || '',
@@ -82,8 +95,13 @@ export function ConfirmationModal({
     },
   });
 
-  const onConfirm = (data: InsertTransaction) => {
-    createTransactionMutation.mutate(data);
+  const onConfirm = (data: FormData) => {
+    // Convert form data to InsertTransaction format
+    const transactionData: InsertTransaction = {
+      ...data,
+      date: new Date(data.date), // Convert string to Date for API
+    };
+    createTransactionMutation.mutate(transactionData);
   };
 
   const onReject = () => {

@@ -39,7 +39,10 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   reconciled: true,
 }).extend({
   type: z.enum(['income', 'expense']),
-  date: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  date: z.union([
+    z.string().transform((val) => new Date(val)),
+    z.date()
+  ]).optional(),
 });
 
 export const transactionFilterSchema = z.object({

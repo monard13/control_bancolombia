@@ -37,14 +37,28 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
-  const form = useForm<InsertTransaction>({
-    resolver: zodResolver(insertTransactionSchema),
+  // Local form type that matches HTML form fields exactly
+  type FormData = {
+    type: 'income' | 'expense';
+    amount: string;
+    description: string;
+    date: string; // HTML date input expects string
+    receiptUrl?: string;
+  };
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(insertTransactionSchema.extend({
+      date: z.string() // Form expects string for date input
+    })),
     defaultValues: {
-      type: 'expense',
-      amount: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-      ...initialData,
+      type: initialData?.type || 'expense',
+      amount: initialData?.amount || '',
+      description: initialData?.description || '',
+      date: initialData?.date 
+        ? (typeof initialData.date === 'string' 
+          ? initialData.date 
+          : initialData.date.toISOString().split('T')[0]) 
+        : new Date().toISOString().split('T')[0],
     },
   });
 
@@ -96,7 +110,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
     },
   });
 
-  const onSubmit = async (data: InsertTransaction) => {
+  const onSubmit = async (data: FormData) => {
     if (!receiptFile) {
       toast({
         title: "Comprobante requerido",
@@ -111,11 +125,15 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       // First upload the receipt
       const receiptUrl = await uploadReceiptMutation.mutateAsync(receiptFile);
       
-      // Then create the transaction with the receipt URL and auto-assigned category
-      await createTransactionMutation.mutateAsync({
+      // Convert form data to InsertTransaction format
+      const transactionData: InsertTransaction = {
         ...data,
+        date: new Date(data.date), // Convert string to Date for API
         receiptUrl: receiptUrl, // Send the full upload URL, backend will normalize it
-      });
+      };
+      
+      // Then create the transaction with the receipt URL and auto-assigned category
+      await createTransactionMutation.mutateAsync(transactionData);
     } catch (error) {
       toast({
         title: "Error",

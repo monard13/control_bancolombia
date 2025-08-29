@@ -237,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         extractedData = await aiService.extractTransactionData(ocrText);
       } catch (aiError) {
-        console.log('AI service unavailable, falling back to OCR-only mode:', aiError.message);
+        console.log('AI service unavailable, falling back to OCR-only mode:', aiError instanceof Error ? aiError.message : String(aiError));
         aiAvailable = false;
         
         // Fallback: provide basic structure with OCR text

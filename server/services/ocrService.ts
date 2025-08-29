@@ -6,9 +6,9 @@ export class OCRService {
 
   async initialize() {
     if (!this.worker) {
-      this.worker = await createWorker();
-      await this.worker.loadLanguage('spa+eng');
-      await this.worker.initialize('spa+eng');
+      this.worker = await createWorker('spa+eng', 1, {
+        logger: m => {} // Disable logging
+      });
     }
   }
 

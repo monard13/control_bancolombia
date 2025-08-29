@@ -62,6 +62,9 @@ export class MemStorage implements IStorage {
       ...insertTransaction,
       reconciled: insertTransaction.reconciled ?? false, // Default to false if not provided
       date: insertTransaction.date ? new Date(insertTransaction.date) : now,
+      receiptUrl: insertTransaction.receiptUrl ?? null, // Ensure null instead of undefined
+      extractedData: insertTransaction.extractedData ?? null, // Ensure proper type
+      confidence: insertTransaction.confidence ?? null, // Ensure proper type
       createdAt: now,
       updatedAt: now,
     };
