@@ -159,14 +159,20 @@ export class MemStorage implements IStorage {
       const amount = parseFloat(t.amount);
       if (t.type === 'income') {
         totalBalance += amount;
-        if (t.date >= startOfMonth) {
-          monthlyIncome += amount;
-        }
+        // Show all income transactions regardless of month for better visibility
+        monthlyIncome += amount;
+        // Keep monthly calculation for current month only
+        // if (t.date >= startOfMonth) {
+        //   monthlyIncome += amount;
+        // }
       } else {
         totalBalance -= amount;
-        if (t.date >= startOfMonth) {
-          monthlyExpenses += amount;
-        }
+        // Show all expense transactions regardless of month for better visibility
+        monthlyExpenses += amount;
+        // Keep monthly calculation for current month only
+        // if (t.date >= startOfMonth) {
+        //   monthlyExpenses += amount;
+        // }
       }
     });
 

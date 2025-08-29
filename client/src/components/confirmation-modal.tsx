@@ -89,6 +89,8 @@ export function ConfirmationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      queryClient.refetchQueries({ queryKey: ['/api/transactions'] }); // Force immediate refetch
+      queryClient.refetchQueries({ queryKey: ['/api/transactions/summary'] }); // Force immediate refetch
       toast({
         title: "Transacción confirmada",
         description: "La transacción se ha registrado correctamente.",

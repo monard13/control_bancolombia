@@ -39,7 +39,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     date: '',
   });
 
-  const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
+  const { data: transactions = [], isLoading, refetch } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions', filters, pagination],
     queryFn: async () => {
       const params = new URLSearchParams({
