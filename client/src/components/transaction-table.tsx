@@ -506,14 +506,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-muted-foreground hover:text-foreground"
-                              data-testid={`button-view-${transaction.id}`}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               className="text-destructive hover:text-destructive/80"
                               onClick={() => handleDeleteTransaction(transaction.id)}
                               disabled={deleteTransactionMutation.isPending}
