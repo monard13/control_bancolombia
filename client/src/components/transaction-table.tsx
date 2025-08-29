@@ -161,7 +161,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       description: transaction.description,
       amount: transaction.amount.toString(),
       type: transaction.type,
-      category: transaction.category,
+      category: transaction.type === 'income' ? 'INGRESO' : 'EGRESO',
       date: new Date(transaction.date).toISOString().split('T')[0],
     });
   };
@@ -460,7 +460,13 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                     <Label htmlFor="edit-type">Tipo</Label>
                                     <Select 
                                       value={editForm.type} 
-                                      onValueChange={(value) => setEditForm({...editForm, type: value})}
+                                      onValueChange={(value) => {
+                                        setEditForm({
+                                          ...editForm, 
+                                          type: value,
+                                          category: value === 'income' ? 'INGRESO' : 'EGRESO'
+                                        });
+                                      }}
                                     >
                                       <SelectTrigger>
                                         <SelectValue placeholder="Seleccionar tipo" />
@@ -468,21 +474,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                       <SelectContent>
                                         <SelectItem value="income">Ingreso</SelectItem>
                                         <SelectItem value="expense">Egreso</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edit-category">Categoría</Label>
-                                    <Select 
-                                      value={editForm.category} 
-                                      onValueChange={(value) => setEditForm({...editForm, category: value})}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Seleccionar categoría" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="INGRESO">INGRESO</SelectItem>
-                                        <SelectItem value="EGRESO">EGRESO</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
