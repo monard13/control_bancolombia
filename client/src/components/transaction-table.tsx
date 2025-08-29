@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
@@ -37,6 +39,15 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
   const [pagination, setPagination] = useState({
     limit: 25,
     offset: 0,
+  });
+  
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: '',
+    amount: '',
+    type: '',
+    category: '',
+    date: '',
   });
 
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
@@ -81,6 +92,29 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     },
   });
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest('PUT', `/api/transactions/${id}`, data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/summary'] });
+      setEditingTransaction(null);
+      toast({
+        title: "Transacción actualizada",
+        description: "La transacción se ha actualizado correctamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la transacción.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatCurrency = (amount: string, type: string) => {
     const value = parseFloat(amount);
     const formatted = new Intl.NumberFormat('es-MX', {
@@ -119,6 +153,35 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     if (confirm('¿Estás seguro de que quieres eliminar esta transacción?')) {
       deleteTransactionMutation.mutate(id);
     }
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setEditForm({
+      description: transaction.description,
+      amount: transaction.amount.toString(),
+      type: transaction.type,
+      category: transaction.category,
+      date: new Date(transaction.date).toISOString().split('T')[0],
+    });
+  };
+
+  const handleUpdateTransaction = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTransaction) return;
+
+    const updatedData = {
+      description: editForm.description,
+      amount: parseFloat(editForm.amount),
+      type: editForm.type,
+      category: editForm.category,
+      date: new Date(editForm.date).toISOString(),
+    };
+
+    updateTransactionMutation.mutate({
+      id: editingTransaction.id,
+      data: updatedData,
+    });
   };
 
   const exportToCSV = () => {
@@ -327,22 +390,13 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                            }`}>
-                              <IconComponent className={`w-4 h-4 ${
-                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                              }`} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium" data-testid={`text-description-${transaction.id}`}>
-                                {transaction.description}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {transaction.receiptUrl ? 'Procesado por OCR' : 'Manual'}
-                              </p>
-                            </div>
+                          <div>
+                            <p className="text-sm font-medium" data-testid={`text-description-${transaction.id}`}>
+                              {transaction.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {transaction.receiptUrl ? 'Procesado por OCR' : 'Manual'}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -365,14 +419,99 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary hover:text-primary/80"
-                              data-testid={`button-edit-${transaction.id}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-primary hover:text-primary/80"
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  data-testid={`button-edit-${transaction.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                  <DialogTitle>Editar Transacción</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={handleUpdateTransaction} className="space-y-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-description">Descripción</Label>
+                                    <Input
+                                      id="edit-description"
+                                      value={editForm.description}
+                                      onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-amount">Cantidad</Label>
+                                    <Input
+                                      id="edit-amount"
+                                      type="number"
+                                      step="0.01"
+                                      value={editForm.amount}
+                                      onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-type">Tipo</Label>
+                                    <Select 
+                                      value={editForm.type} 
+                                      onValueChange={(value) => setEditForm({...editForm, type: value})}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar tipo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="income">Ingreso</SelectItem>
+                                        <SelectItem value="expense">Egreso</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-category">Categoría</Label>
+                                    <Select 
+                                      value={editForm.category} 
+                                      onValueChange={(value) => setEditForm({...editForm, category: value})}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar categoría" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="INGRESO">INGRESO</SelectItem>
+                                        <SelectItem value="EGRESO">EGRESO</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-date">Fecha</Label>
+                                    <Input
+                                      id="edit-date"
+                                      type="date"
+                                      value={editForm.date}
+                                      onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <DialogTrigger asChild>
+                                      <Button type="button" variant="outline">
+                                        Cancelar
+                                      </Button>
+                                    </DialogTrigger>
+                                    <Button 
+                                      type="submit" 
+                                      disabled={updateTransactionMutation.isPending}
+                                    >
+                                      {updateTransactionMutation.isPending ? 'Actualizando...' : 'Actualizar'}
+                                    </Button>
+                                  </div>
+                                </form>
+                              </DialogContent>
+                            </Dialog>
                             <Button
                               variant="ghost"
                               size="sm"
