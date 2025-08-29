@@ -201,7 +201,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       {showFilters && (
         <Card>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Buscar</label>
                 <div className="relative">
@@ -229,24 +229,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="income">Ingresos</SelectItem>
                     <SelectItem value="expense">Egresos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Categoría</label>
-                <Select
-                  value={filters.category}
-                  onValueChange={(value) => setFilters({ ...filters, category: value })}
-                >
-                  <SelectTrigger data-testid="select-category-filter">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {Object.entries(categoryLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>{label}</SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>
