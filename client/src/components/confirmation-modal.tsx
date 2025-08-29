@@ -51,7 +51,6 @@ export function ConfirmationModal({
       type: transactionType,
       amount: extractedData.amount?.toString() || '',
       description: extractedData.description || '',
-      category: transactionType === 'income' ? 'INGRESO' : 'EGRESO',
       date: extractedData.date || new Date().toISOString().split('T')[0],
       receiptUrl: receiptUrl || undefined,
       extractedData: extractedData,
@@ -193,7 +192,6 @@ export function ConfirmationModal({
                         onValueChange={(value: 'income' | 'expense') => {
                           field.onChange(value);
                           setTransactionType(value);
-                          form.setValue('category', value === 'income' ? 'INGRESO' : 'EGRESO');
                         }}
                         value={field.value}
                         className="flex space-x-4"

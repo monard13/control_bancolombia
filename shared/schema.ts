@@ -14,7 +14,6 @@ export const transactions = pgTable("transactions", {
   type: text("type").notNull(), // 'income' or 'expense'
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   description: text("description").notNull(),
-  category: text("category").notNull(),
   date: timestamp("date").notNull().defaultNow(),
   receiptUrl: text("receipt_url"),
   extractedData: jsonb("extracted_data"), // OCR and AI extracted data
@@ -33,7 +32,6 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   type: true,
   amount: true,
   description: true,
-  category: true,
   date: true,
   receiptUrl: true,
   extractedData: true,
@@ -41,13 +39,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
   reconciled: true,
 }).extend({
   type: z.enum(['income', 'expense']),
-  category: z.enum(['INGRESO', 'EGRESO']),
   date: z.string().optional().transform((val) => val ? new Date(val) : undefined),
 });
 
 export const transactionFilterSchema = z.object({
   type: z.enum(['income', 'expense', 'all']).optional(),
-  category: z.string().optional(),
   search: z.string().optional(),
   period: z.enum(['week', 'month', 'quarter', 'year', 'all']).optional(),
   startDate: z.string().optional(),

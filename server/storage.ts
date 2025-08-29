@@ -12,7 +12,6 @@ export interface IStorage {
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactions(filters?: {
     type?: 'income' | 'expense';
-    category?: string;
     search?: string;
     startDate?: Date;
     endDate?: Date;
@@ -76,7 +75,6 @@ export class MemStorage implements IStorage {
 
   async getTransactions(filters?: {
     type?: 'income' | 'expense';
-    category?: string;
     search?: string;
     startDate?: Date;
     endDate?: Date;
@@ -89,15 +87,11 @@ export class MemStorage implements IStorage {
       result = result.filter(t => t.type === filters.type);
     }
 
-    if (filters?.category) {
-      result = result.filter(t => t.category === filters.category);
-    }
 
     if (filters?.search) {
       const search = filters.search.toLowerCase();
       result = result.filter(t => 
-        t.description.toLowerCase().includes(search) ||
-        t.category.toLowerCase().includes(search)
+        t.description.toLowerCase().includes(search)
       );
     }
 

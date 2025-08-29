@@ -72,7 +72,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const transactions = await storage.getTransactions({
         type: filters.type === 'all' ? undefined : filters.type,
-        category: filters.category === 'all' ? undefined : filters.category,
         search: filters.search,
         startDate,
         endDate,

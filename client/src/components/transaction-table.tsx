@@ -13,15 +13,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { type Transaction } from "@shared/schema";
 import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCart, Car, Zap, Download, Minus, FileText, Check } from "lucide-react";
 
-const categoryIcons = {
-  'INGRESO': Plus,
-  'EGRESO': Minus,
-};
-
-const categoryLabels = {
-  'INGRESO': 'INGRESO',
-  'EGRESO': 'EGRESO',
-};
 
 interface TransactionTableProps {
   showFilters?: boolean;
@@ -33,7 +24,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
   const [filters, setFilters] = useState({
     search: '',
     type: 'all',
-    category: 'all',
     period: 'month',
   });
   const [pagination, setPagination] = useState({
@@ -46,7 +36,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     description: '',
     amount: '',
     type: '',
-    category: '',
     date: '',
   });
 
@@ -134,20 +123,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     }).format(new Date(date));
   };
 
-  const getCategoryBadgeColor = (category: string, type: string) => {
-    if (type === 'income') return 'bg-green-100 text-green-800';
-    
-    const colorMap: Record<string, string> = {
-      'food': 'bg-blue-100 text-blue-800',
-      'transport': 'bg-yellow-100 text-yellow-800',
-      'utilities': 'bg-purple-100 text-purple-800',
-      'entertainment': 'bg-pink-100 text-pink-800',
-      'healthcare': 'bg-red-100 text-red-800',
-      'other-expense': 'bg-gray-100 text-gray-800',
-    };
-    
-    return colorMap[category] || 'bg-gray-100 text-gray-800';
-  };
 
   const handleDeleteTransaction = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta transacción?')) {
@@ -161,7 +136,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       description: transaction.description,
       amount: transaction.amount.toString(),
       type: transaction.type,
-      category: transaction.type === 'income' ? 'INGRESO' : 'EGRESO',
       date: new Date(transaction.date).toISOString().split('T')[0],
     });
   };
@@ -174,7 +148,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       description: editForm.description,
       amount: parseFloat(editForm.amount),
       type: editForm.type,
-      category: editForm.type === 'income' ? 'INGRESO' : 'EGRESO', // Auto-assign category based on type
       date: new Date(editForm.date).toISOString(),
     };
 
@@ -226,7 +199,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
     }
 
     // Crear las cabeceras del CSV
-    const headers = ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Cantidad'];
+    const headers = ['Fecha', 'Descripción', 'Tipo', 'Cantidad'];
     
     // Convertir transacciones a filas CSV
     const csvRows = transactions.map(transaction => {
@@ -237,7 +210,6 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
       return [
         date,
         `"${transaction.description}"`, // Comillas para manejar descripciones con comas
-        transaction.category,
         type,
         amount.toFixed(2)
       ].join(',');
@@ -406,7 +378,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                 </TableHeader>
                 <TableBody>
                   {transactions.map((transaction) => {
-                    const IconComponent = categoryIcons[transaction.category as keyof typeof categoryIcons] || Eye;
+                    const IconComponent = transaction.type === 'income' ? Plus : Minus;
                     return (
                       <TableRow
                         key={transaction.id}
@@ -433,7 +405,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={getCategoryBadgeColor(transaction.category, transaction.type)}
+                            className={transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
                             data-testid={`badge-type-${transaction.id}`}
                           >
                             {transaction.type === 'income' ? 'INGRESO' : 'EGRESO'}
@@ -510,8 +482,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                       onValueChange={(value) => {
                                         setEditForm({
                                           ...editForm, 
-                                          type: value,
-                                          category: value === 'income' ? 'INGRESO' : 'EGRESO'
+                                          type: value
                                         });
                                       }}
                                     >

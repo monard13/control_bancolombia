@@ -43,7 +43,6 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       type: 'expense',
       amount: '',
       description: '',
-      category: transactionType === 'income' ? 'INGRESO' : 'EGRESO',
       date: new Date().toISOString().split('T')[0],
       ...initialData,
     },
@@ -115,7 +114,6 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       // Then create the transaction with the receipt URL and auto-assigned category
       await createTransactionMutation.mutateAsync({
         ...data,
-        category: data.type === 'income' ? 'INGRESO' : 'EGRESO', // Auto-assign category based on type
         receiptUrl: receiptUrl, // Send the full upload URL, backend will normalize it
       });
     } catch (error) {
@@ -177,7 +175,6 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
                       onValueChange={(value: 'income' | 'expense') => {
                         field.onChange(value);
                         setTransactionType(value);
-                        form.setValue('category', ''); // Reset category when type changes
                       }}
                       value={field.value}
                       className="flex space-x-4"
