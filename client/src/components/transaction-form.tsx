@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { insertTransactionSchema, type InsertTransaction } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { Save, X } from "lucide-react";
+import { Save, X, Upload, FileText } from "lucide-react";
 
 const categories = {
   income: [
@@ -34,6 +34,8 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>(
     initialData?.type || 'expense'
   );
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
   const form = useForm<InsertTransaction>({
     resolver: zodResolver(insertTransactionSchema),
@@ -47,9 +49,32 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
     },
   });
 
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async (file: File) => {
+      // Get upload URL
+      const uploadResponse = await fetch('/api/objects/upload', { method: 'POST' });
+      const { uploadURL } = await uploadResponse.json();
+
+      // Upload file to object storage
+      const putResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      if (!putResponse.ok) throw new Error('Failed to upload receipt');
+      return uploadURL;
+    },
+  });
+
   const createTransactionMutation = useMutation({
-    mutationFn: async (data: InsertTransaction) => {
-      const response = await apiRequest('POST', '/api/transactions', data);
+    mutationFn: async (data: InsertTransaction & { receiptUrl?: string }) => {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create transaction');
       return response.json();
     },
     onSuccess: () => {
@@ -60,6 +85,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
         description: "La transacción se ha registrado correctamente.",
       });
       form.reset();
+      setReceiptFile(null);
     },
     onError: (error) => {
       toast({
@@ -71,8 +97,63 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
     },
   });
 
-  const onSubmit = (data: InsertTransaction) => {
-    createTransactionMutation.mutate(data);
+  const onSubmit = async (data: InsertTransaction) => {
+    if (!receiptFile) {
+      toast({
+        title: "Comprobante requerido",
+        description: "Debes subir un comprobante para crear la transacción.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingReceipt(true);
+    try {
+      // First upload the receipt
+      const receiptUrl = await uploadReceiptMutation.mutateAsync(receiptFile);
+      
+      // Then create the transaction with the receipt URL
+      await createTransactionMutation.mutateAsync({
+        ...data,
+        receiptUrl: receiptUrl.replace(window.location.origin, '').replace('https://storage.googleapis.com', '/objects'),
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la transacción. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Tipo de archivo no válido",
+          description: "Solo se permiten archivos JPG, PNG, WebP o PDF.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: "El archivo debe ser menor a 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setReceiptFile(file);
+    }
   };
 
   return (
@@ -201,6 +282,54 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
               )}
             />
 
+            {/* Receipt Upload Field - Required */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Comprobante <span className="text-red-500">*</span>
+              </Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="receipt-upload"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  data-testid="input-receipt"
+                />
+                <label
+                  htmlFor="receipt-upload"
+                  className="cursor-pointer flex flex-col items-center space-y-2"
+                >
+                  {receiptFile ? (
+                    <>
+                      <FileText className="w-8 h-8 text-green-600" />
+                      <span className="text-sm text-green-600 font-medium">
+                        {receiptFile.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {(receiptFile.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Haz clic para subir el comprobante
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        JPG, PNG, WebP o PDF (máx. 5MB)
+                      </span>
+                    </>
+                  )}
+                </label>
+              </div>
+              {!receiptFile && (
+                <p className="text-sm text-red-500">
+                  El comprobante es obligatorio para crear la transacción
+                </p>
+              )}
+            </div>
+
             <div className="flex justify-end space-x-4">
               {onCancel && (
                 <Button
@@ -215,11 +344,15 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
               )}
               <Button
                 type="submit"
-                disabled={createTransactionMutation.isPending}
+                disabled={createTransactionMutation.isPending || isUploadingReceipt || !receiptFile}
                 data-testid="button-save"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {createTransactionMutation.isPending ? "Guardando..." : "Guardar Transacción"}
+                {isUploadingReceipt
+                  ? "Subiendo comprobante..."
+                  : createTransactionMutation.isPending
+                  ? "Guardando..."
+                  : "Guardar Transacción"}
               </Button>
             </div>
           </form>
