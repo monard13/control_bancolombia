@@ -146,7 +146,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
 
     const updatedData = {
       description: editForm.description,
-      amount: parseFloat(editForm.amount),
+      amount: editForm.amount, // Keep as string, don't parse to float
       type: editForm.type,
       date: new Date(editForm.date).toISOString(),
     };
