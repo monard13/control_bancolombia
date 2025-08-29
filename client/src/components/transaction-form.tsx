@@ -112,9 +112,10 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       // First upload the receipt
       const receiptUrl = await uploadReceiptMutation.mutateAsync(receiptFile);
       
-      // Then create the transaction with the receipt URL
+      // Then create the transaction with the receipt URL and auto-assigned category
       await createTransactionMutation.mutateAsync({
         ...data,
+        category: data.type === 'income' ? 'INGRESO' : 'EGRESO', // Auto-assign category based on type
         receiptUrl: receiptUrl, // Send the full upload URL, backend will normalize it
       });
     } catch (error) {
@@ -239,30 +240,6 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoría</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-category">
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories[transactionType].map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

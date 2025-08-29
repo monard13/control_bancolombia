@@ -398,7 +398,7 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                   <TableRow>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Descripción</TableHead>
-                    <TableHead>Categoría</TableHead>
+                    <TableHead>Tipo de Transacción</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
                     <TableHead className="text-center">Conciliado</TableHead>
                     <TableHead className="text-center">Acciones</TableHead>
@@ -434,9 +434,9 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                         <TableCell>
                           <Badge
                             className={getCategoryBadgeColor(transaction.category, transaction.type)}
-                            data-testid={`badge-category-${transaction.id}`}
+                            data-testid={`badge-type-${transaction.id}`}
                           >
-                            {categoryLabels[transaction.category as keyof typeof categoryLabels]}
+                            {transaction.type === 'income' ? 'INGRESO' : 'EGRESO'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
