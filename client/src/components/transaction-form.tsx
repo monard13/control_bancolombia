@@ -115,7 +115,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
       // Then create the transaction with the receipt URL
       await createTransactionMutation.mutateAsync({
         ...data,
-        receiptUrl: receiptUrl.replace(window.location.origin, '').replace('https://storage.googleapis.com', '/objects'),
+        receiptUrl: receiptUrl, // Send the full upload URL, backend will normalize it
       });
     } catch (error) {
       toast({

@@ -91,6 +91,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transactions", async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
+      
+      // If there's a receiptUrl, normalize it to the proper object path
+      if (transactionData.receiptUrl) {
+        const objectStorageService = new ObjectStorageService();
+        transactionData.receiptUrl = objectStorageService.normalizeObjectEntityPath(transactionData.receiptUrl);
+      }
+      
       const transaction = await storage.createTransaction(transactionData);
       res.status(201).json(transaction);
     } catch (error) {
