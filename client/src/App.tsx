@@ -10,8 +10,10 @@ import Dashboard from "@/pages/dashboard";
 import AddTransaction from "@/pages/add-transaction";
 import UploadReceipt from "@/pages/upload-receipt";
 import Transactions from "@/pages/transactions";
-import { ChartPie, Plus, Camera, List, ChartLine, Bell, Settings } from "lucide-react";
+import { ChartPie, Plus, Camera, List, ChartLine, Bell, Settings, Info, Building2, CreditCard, Hash, Key } from "lucide-react";
 import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const navigation = [
   { id: 'dashboard', label: 'Dashboard', icon: ChartPie, path: '/' },
@@ -40,6 +42,74 @@ function Header() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex items-center space-x-1"
+                  data-testid="button-bank-info"
+                >
+                  <Info className="w-4 h-4" />
+                  <span className="hidden sm:inline">Información Bancaria</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center space-x-2">
+                    <Building2 className="w-5 h-5 text-primary" />
+                    <span>Información Bancaria</span>
+                  </DialogTitle>
+                </DialogHeader>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-center">Base Solution SAS</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="font-medium">Banco</p>
+                          <p className="text-sm text-muted-foreground">Bancolombia</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="font-medium">Cuenta de Ahorros</p>
+                          <p className="text-sm text-muted-foreground font-mono">83600004845</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                        <Hash className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="font-medium">NIT</p>
+                          <p className="text-sm text-muted-foreground font-mono">901489530</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
+                        <Key className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="font-medium">Llave Bre-B</p>
+                          <p className="text-sm text-muted-foreground font-mono">0082110032</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
+                        <strong>Base Solution SAS</strong><br />
+                        Información bancaria oficial
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </DialogContent>
+            </Dialog>
             <Button variant="ghost" size="sm" data-testid="button-notifications">
               <Bell className="w-5 h-5" />
             </Button>
