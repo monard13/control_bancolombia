@@ -49,7 +49,23 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
       onLoginSuccess(data.user);
     },
     onError: (error: any) => {
-      setLoginError(error?.error || "Error interno del servidor");
+      console.error('Login error:', error);
+      let errorMessage = "Error interno del servidor";
+      
+      if (error?.message) {
+        // Try to parse error message for more specific info
+        if (error.message.includes('401')) {
+          errorMessage = "Credenciales incorrectas. Intente de nuevo.";
+        } else if (error.message.includes('500')) {
+          errorMessage = "Error interno del servidor. Intente más tarde.";
+        } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+          errorMessage = "Error de conexión. Verifique su conexión a internet.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setLoginError(errorMessage);
     },
   });
 

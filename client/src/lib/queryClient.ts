@@ -2,7 +2,23 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    let text = res.statusText;
+    
+    try {
+      const responseText = await res.text();
+      if (responseText) {
+        // Try to parse as JSON to get error message
+        try {
+          const errorData = JSON.parse(responseText);
+          text = errorData.error || errorData.message || responseText;
+        } catch {
+          text = responseText;
+        }
+      }
+    } catch {
+      // If we can't read the response, use the status text
+      text = res.statusText;
+    }
     
     // If we get a 401, the user is not authenticated - force a page reload to go back to login
     if (res.status === 401) {
