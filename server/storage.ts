@@ -1,5 +1,6 @@
-import { type User, type InsertUser, type Transaction, type InsertTransaction } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { users, transactions, type User, type InsertUser, type Transaction, type InsertTransaction } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, gte, lte, desc, ilike, sql, sum } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -28,52 +29,40 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private transactions: Map<string, Transaction>;
-
-  constructor() {
-    this.users = new Map();
-    this.transactions = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
-    const id = randomUUID();
-    const now = new Date();
-    const transaction: Transaction = {
-      id,
-      ...insertTransaction,
-      reconciled: insertTransaction.reconciled ?? false, // Default to false if not provided
-      date: insertTransaction.date ? new Date(insertTransaction.date) : now,
-      receiptUrl: insertTransaction.receiptUrl ?? null, // Ensure null instead of undefined
-      extractedData: insertTransaction.extractedData ?? null, // Ensure proper type
-      confidence: insertTransaction.confidence ?? null, // Ensure proper type
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.transactions.set(id, transaction);
+    const [transaction] = await db
+      .insert(transactions)
+      .values({
+        ...insertTransaction,
+        reconciled: insertTransaction.reconciled ?? false,
+        date: insertTransaction.date ? new Date(insertTransaction.date) : new Date(),
+      })
+      .returning();
     return transaction;
   }
 
   async getTransaction(id: string): Promise<Transaction | undefined> {
-    return this.transactions.get(id);
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction || undefined;
   }
 
   async getTransactions(filters?: {
@@ -84,61 +73,65 @@ export class MemStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<Transaction[]> {
-    let result = Array.from(this.transactions.values());
+    const whereConditions = [];
 
     if (filters?.type) {
-      result = result.filter(t => t.type === filters.type);
+      whereConditions.push(eq(transactions.type, filters.type));
     }
 
-
     if (filters?.search) {
-      const search = filters.search.toLowerCase();
-      result = result.filter(t => 
-        t.description.toLowerCase().includes(search)
-      );
+      whereConditions.push(ilike(transactions.description, `%${filters.search}%`));
     }
 
     if (filters?.startDate) {
-      result = result.filter(t => t.date >= filters.startDate!);
+      whereConditions.push(gte(transactions.date, filters.startDate));
     }
 
     if (filters?.endDate) {
-      result = result.filter(t => t.date <= filters.endDate!);
+      whereConditions.push(lte(transactions.date, filters.endDate));
     }
 
-    // Sort by date descending
-    result.sort((a, b) => b.date.getTime() - a.date.getTime());
-
+    const baseQuery = db.select().from(transactions);
+    
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+    const queryWithWhere = whereClause ? baseQuery.where(whereClause) : baseQuery;
+    const queryWithOrder = queryWithWhere.orderBy(desc(transactions.date));
+    
+    let finalQuery = queryWithOrder;
+    
     if (filters?.offset) {
-      result = result.slice(filters.offset);
+      finalQuery = finalQuery.offset(filters.offset);
     }
 
     if (filters?.limit) {
-      result = result.slice(0, filters.limit);
+      finalQuery = finalQuery.limit(filters.limit);
     }
 
-    return result;
+    return await finalQuery;
   }
 
   async updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction | undefined> {
-    const transaction = this.transactions.get(id);
-    if (!transaction) return undefined;
-
-    const updated: Transaction = {
-      ...transaction,
+    const updateData = {
       ...updates,
-      // Handle boolean fields explicitly
-      reconciled: updates.reconciled !== undefined ? updates.reconciled : transaction.reconciled,
-      date: updates.date ? new Date(updates.date) : transaction.date,
       updatedAt: new Date(),
     };
 
-    this.transactions.set(id, updated);
-    return updated;
+    if (updates.date) {
+      updateData.date = new Date(updates.date);
+    }
+
+    const [transaction] = await db
+      .update(transactions)
+      .set(updateData)
+      .where(eq(transactions.id, id))
+      .returning();
+
+    return transaction || undefined;
   }
 
   async deleteTransaction(id: string): Promise<boolean> {
-    return this.transactions.delete(id);
+    const result = await db.delete(transactions).where(eq(transactions.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   async getTransactionsSummary(): Promise<{
@@ -147,32 +140,20 @@ export class MemStorage implements IStorage {
     monthlyExpenses: number;
     transactionCount: number;
   }> {
-    const transactions = Array.from(this.transactions.values());
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const allTransactions = await db.select().from(transactions);
     
     let totalBalance = 0;
     let monthlyIncome = 0;
     let monthlyExpenses = 0;
 
-    transactions.forEach(t => {
+    allTransactions.forEach(t => {
       const amount = parseFloat(t.amount);
       if (t.type === 'income') {
         totalBalance += amount;
-        // Show all income transactions regardless of month for better visibility
         monthlyIncome += amount;
-        // Keep monthly calculation for current month only
-        // if (t.date >= startOfMonth) {
-        //   monthlyIncome += amount;
-        // }
       } else {
         totalBalance -= amount;
-        // Show all expense transactions regardless of month for better visibility
         monthlyExpenses += amount;
-        // Keep monthly calculation for current month only
-        // if (t.date >= startOfMonth) {
-        //   monthlyExpenses += amount;
-        // }
       }
     });
 
@@ -180,9 +161,9 @@ export class MemStorage implements IStorage {
       totalBalance,
       monthlyIncome,
       monthlyExpenses,
-      transactionCount: transactions.length,
+      transactionCount: allTransactions.length,
     };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

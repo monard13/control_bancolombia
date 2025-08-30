@@ -28,9 +28,10 @@ Preferred communication style: Simple, everyday language.
 - **AI Integration**: OpenAI GPT-5 for intelligent transaction data extraction from OCR text
 
 ### Data Storage Solutions
-- **Primary Database**: PostgreSQL with Neon Database serverless deployment
-- **Database Schema**: Two main entities - users and transactions
+- **Primary Database**: PostgreSQL with Neon Database serverless deployment (fully configured and operational)
+- **Database Schema**: Two main entities - users and transactions with UUID primary keys
 - **Schema Management**: Drizzle Kit for database migrations and schema synchronization
+- **Storage Implementation**: DatabaseStorage class using Drizzle ORM for all CRUD operations
 - **Session Storage**: Connect-pg-simple for PostgreSQL-based session management
 - **Object Storage**: Google Cloud Storage integration for receipt image storage with custom ACL policy management
 
