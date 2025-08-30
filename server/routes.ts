@@ -6,10 +6,9 @@ import { storage } from "./storage";
 import { ocrService } from "./services/ocrService";
 import { aiService } from "./services/aiService";
 import { ObjectStorageService } from "./objectStorage";
-import { insertTransactionSchema, transactionFilterSchema, loginSchema, insertUserSchema } from "@shared/schema";
+import { insertTransactionSchema, transactionFilterSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
 
 // Extend Express Session interface
 declare module 'express-session' {
@@ -82,59 +81,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register new user endpoint
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      // Parse and force role to be "user" for security - only predefined accounts can have admin/visitor roles
-      const userData = insertUserSchema.parse({
-        ...req.body,
-        role: 'user' // Always force role to user during registration
-      });
-      
-      // Check if user already exists
-      const existingUserByEmail = await storage.getUserByEmail(userData.email);
-      if (existingUserByEmail) {
-        return res.status(400).json({ error: "Ya existe un usuario con este correo electrónico" });
-      }
-      
-      const existingUserByUsername = await storage.getUserByUsername(userData.username);
-      if (existingUserByUsername) {
-        return res.status(400).json({ error: "Ya existe un usuario con este nombre de usuario" });
-      }
-      
-      // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // Create user
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-      
-      // Welcome email disabled temporarily
-      // try {
-      //   await sendWelcomeEmail(user.email, user.username);
-      // } catch (emailError) {
-      //   console.log('Warning: Could not send welcome email:', emailError);
-      //   // Continue with registration even if email fails
-      // }
-      
-      // Return user data without password
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json({ 
-        user: userWithoutPassword,
-        message: "Usuario registrado exitosamente" 
-      });
-      
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: error.errors });
-      } else {
-        console.error('Error during registration:', error);
-        res.status(500).json({ error: "Error interno del servidor" });
-      }
-    }
-  });
 
   // Create test users endpoint (for initial setup)
   app.post("/api/auth/setup", async (req, res) => {
@@ -462,60 +408,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Email service function
-async function sendWelcomeEmail(email: string, username: string) {
-  // Configure email transporter (using Gmail as example)
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'monard.aaron@gmail.com',
-      pass: process.env.EMAIL_APP_PASSWORD || 'your-app-password-here'
-    }
-  });
-
-  const mailOptions = {
-    from: 'monard.aaron@gmail.com',
-    to: email,
-    subject: 'Bienvenido a FinanceTracker - Base Solution SAS',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;">
-          <h1>¡Bienvenido a FinanceTracker!</h1>
-          <h2>BASE SOLUTION SAS</h2>
-        </div>
-        
-        <div style="padding: 20px; background-color: #f9f9f9;">
-          <h3>Hola ${username},</h3>
-          
-          <p>Tu cuenta ha sido creada exitosamente en FinanceTracker.</p>
-          
-          <p><strong>Detalles de tu cuenta:</strong></p>
-          <ul>
-            <li><strong>Usuario:</strong> ${username}</li>
-            <li><strong>Email:</strong> ${email}</li>
-          </ul>
-          
-          <p>Ya puedes iniciar sesión en la aplicación con tus credenciales.</p>
-          
-          <div style="margin: 30px 0; text-align: center;">
-            <a href="https://${process.env.REPLIT_DEV_DOMAIN || 'your-app-domain.com'}" 
-               style="background-color: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Iniciar Sesión
-            </a>
-          </div>
-          
-          <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
-          
-          <p>Saludos,<br>
-          El equipo de Base Solution SAS</p>
-        </div>
-        
-        <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
-          <p>&copy; 2025 Base Solution SAS. Todos los derechos reservados.</p>
-        </div>
-      </div>
-    `
-  };
-
-  return transporter.sendMail(mailOptions);
-}

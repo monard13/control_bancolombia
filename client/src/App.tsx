@@ -19,7 +19,6 @@ import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Register from "@/pages/register"; // Assuming Register component is created
 
 type User = {
   id: string;
@@ -280,7 +279,6 @@ function App() {
       return null;
     }
   });
-  const [showRegister, setShowRegister] = useState(false);
 
 
   // Check if session is still valid when user is loaded from localStorage
@@ -329,17 +327,9 @@ function App() {
         <div className="min-h-screen bg-background text-foreground">
           <Toaster />
           {!user ? (
-            showRegister ? (
-              <Register
-                onBackToLogin={() => setShowRegister(false)}
-                onRegisterSuccess={() => setShowRegister(false)}
-              />
-            ) : (
-              <Login
-                onLoginSuccess={handleLogin}
-                onShowRegister={() => setShowRegister(true)}
-              />
-            )
+            <Login
+              onLoginSuccess={handleLogin}
+            />
           ) : (
             <AuthenticatedRouter user={user} onLogout={handleLogout} />
           )}
