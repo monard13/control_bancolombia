@@ -184,14 +184,6 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
             </form>
           </Form>
 
-          <div className="text-center space-y-4">
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p><strong>Cuentas predefinidas:</strong></p>
-              <p>aaron.monard@basesolution.app / 123456*</p>
-              <p>visitante@basesolution.app / 123456*</p>
-              <p>usuario@basesolution.app / user123456*</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
