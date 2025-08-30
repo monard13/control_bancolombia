@@ -16,7 +16,7 @@ interface ProcessingResult {
 }
 
 interface UploadReceiptProps {
-  userRole: 'admin' | 'user' | 'visitor';
+  userRole: 'admin' | 'user';
 }
 
 export default function UploadReceipt({ userRole }: UploadReceiptProps) {

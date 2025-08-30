@@ -14,7 +14,7 @@ import bcrypt from "bcryptjs";
 declare module 'express-session' {
   interface SessionData {
     userId?: string;
-    userRole?: 'admin' | 'user' | 'visitor';
+    userRole?: 'admin' | 'user';
   }
 }
 
@@ -72,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Store user information in session
       req.session.userId = user.id;
-      req.session.userRole = user.role as 'admin' | 'user' | 'visitor';
+      req.session.userRole = user.role as 'admin' | 'user';
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
@@ -107,12 +107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "usuario@dominio.com", 
           password: await bcrypt.hash("user123", 10),
           role: "user" as const
-        },
-        {
-          username: "visitante",
-          email: "visitante@dominio.com",
-          password: await bcrypt.hash("guest123", 10),
-          role: "visitor" as const
         }
       ];
 

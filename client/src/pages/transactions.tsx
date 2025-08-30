@@ -1,7 +1,7 @@
 import { TransactionTable } from "@/components/transaction-table";
 
 interface TransactionsProps {
-  userRole?: 'admin' | 'user' | 'visitor';
+  userRole?: 'admin' | 'user';
 }
 
 export default function Transactions({ userRole = 'user' }: TransactionsProps) {

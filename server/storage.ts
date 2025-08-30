@@ -194,12 +194,6 @@ export async function initializePredefinedAccounts() {
       role: "admin" as const
     },
     {
-      username: "visitante",
-      email: "visitante@basesolution.app",
-      password: "123456*", 
-      role: "visitor" as const
-    },
-    {
       username: "usuario",
       email: "usuario@basesolution.app",
       password: "user123456*",

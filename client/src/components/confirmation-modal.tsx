@@ -31,7 +31,7 @@ interface ConfirmationModalProps {
   extractedData: ExtractedData;
   receiptImage?: string;
   receiptUrl?: string;
-  userRole?: 'admin' | 'user' | 'visitor';
+  userRole?: 'admin' | 'user';
 }
 
 export function ConfirmationModal({

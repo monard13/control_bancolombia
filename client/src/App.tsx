@@ -13,7 +13,6 @@ import Transactions from "@/pages/transactions";
 import Login from "@/pages/login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import UserDashboard from "@/pages/user-dashboard";
-import VisitorDashboard from "@/pages/visitor-dashboard";
 import { ChartPie, Plus, Camera, List, Bell, Settings, Info, Building2, CreditCard, Hash, Key, LogOut } from "lucide-react";
 import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -24,7 +23,7 @@ type User = {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'user' | 'visitor';
+  role: 'admin' | 'user';
 };
 
 const getNavigationForRole = (role: string) => {
@@ -47,7 +46,7 @@ const getNavigationForRole = (role: string) => {
       { id: 'transactions', label: 'Mis Transacciones', icon: List, path: '/transactions' },
     ];
   } else {
-    // visitor role - read-only
+    // default - read-only
     return baseNav;
   }
 };
@@ -59,8 +58,6 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
         return <Badge variant="default">Administrador</Badge>;
       case 'user':
         return <Badge variant="secondary">Usuario</Badge>;
-      case 'visitor':
-        return <Badge variant="outline">Visitante</Badge>;
       default:
         return <Badge variant="outline">Desconocido</Badge>;
     }
@@ -239,8 +236,6 @@ function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => v
         return AdminDashboard;
       case 'user':
         return UserDashboard;
-      case 'visitor':
-        return VisitorDashboard;
       default:
         return Dashboard;
     }

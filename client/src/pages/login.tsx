@@ -17,7 +17,7 @@ interface LoginResponse {
     id: string;
     username: string;
     email: string;
-    role: 'admin' | 'user' | 'visitor';
+    role: 'admin' | 'user';
   };
   message: string;
 }
