@@ -189,6 +189,7 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
               <p><strong>Cuentas predefinidas:</strong></p>
               <p>aaron.monard@basesolution.app / 123456*</p>
               <p>visitante@basesolution.app / 123456*</p>
+              <p>usuario@basesolution.app / user123456*</p>
             </div>
           </div>
         </CardContent>
