@@ -535,7 +535,7 @@ export function TransactionTable({ showFilters = true, canEdit = true, canDelete
                               </DialogContent>
                               </Dialog>
                             )}
-                            {transaction.receiptUrl && (
+                            {transaction.receiptUrl && canEdit && (
                               <Button
                                 variant="ghost"
                                 size="sm"
