@@ -56,26 +56,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
+      console.log('🔐 Login attempt for:', req.body.email);
       const credentials = loginSchema.parse(req.body);
       
       // Find user by email
+      console.log('🔍 Looking up user by email:', credentials.email);
       const user = await storage.getUserByEmail(credentials.email);
       if (!user) {
+        console.log('❌ User not found for email:', credentials.email);
         return res.status(401).json({ error: "Credenciales incorrectas. Intente de nuevo." });
       }
       
+      console.log('✅ User found:', user.username, 'Role:', user.role);
+      
       // Verify password
+      console.log('🔑 Verifying password...');
       const isValidPassword = await bcrypt.compare(credentials.password, user.password);
       if (!isValidPassword) {
+        console.log('❌ Password verification failed for user:', user.username);
         return res.status(401).json({ error: "Credenciales incorrectas. Intente de nuevo." });
       }
+      
+      console.log('✅ Password verified successfully');
       
       // Store user information in session
       req.session.userId = user.id;
       req.session.userRole = user.role as 'admin' | 'user';
       
+      console.log('💾 Session stored. User ID:', user.id, 'Role:', user.role);
+      
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
+      console.log('🎉 Login successful for user:', user.username);
+      
       res.json({ 
         user: userWithoutPassword,
         message: "Login exitoso" 
@@ -83,9 +96,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log('📝 Validation error:', error.errors);
         res.status(400).json({ error: error.errors });
       } else {
-        console.error('Error during login:', error);
+        console.error('💥 Error during login:', error);
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
         res.status(500).json({ error: "Error interno del servidor" });
       }
     }

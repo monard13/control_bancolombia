@@ -186,6 +186,8 @@ export const storage = new DatabaseStorage();
 
 // Initialize predefined accounts
 export async function initializePredefinedAccounts() {
+  console.log('🚀 Initializing predefined accounts...');
+  
   const predefinedAccounts = [
     {
       username: "admin",
@@ -203,9 +205,13 @@ export async function initializePredefinedAccounts() {
 
   for (const account of predefinedAccounts) {
     try {
+      console.log(`🔍 Checking if ${account.username} exists...`);
+      
       // Check if account already exists
       const existingUser = await storage.getUserByEmail(account.email);
       if (!existingUser) {
+        console.log(`📝 Creating new ${account.role} account: ${account.username}`);
+        
         // Hash the password
         const hashedPassword = await bcryptjs.hash(account.password, 10);
         
@@ -223,6 +229,13 @@ export async function initializePredefinedAccounts() {
       }
     } catch (error) {
       console.error(`❌ Failed to create predefined account ${account.username}:`, error);
+      // Log the full error for debugging
+      if (error instanceof Error) {
+        console.error(`Error message: ${error.message}`);
+        console.error(`Error stack: ${error.stack}`);
+      }
     }
   }
+  
+  console.log('✨ Predefined accounts initialization completed');
 }
