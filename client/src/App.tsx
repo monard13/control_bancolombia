@@ -273,9 +273,12 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
 
   const handleLogin = (userData: User) => {
+    console.log('handleLogin called with userData:', userData);
     setUser(userData);
+    console.log('User state set, redirecting to dashboard');
     // Redirect to dashboard after login
     window.history.pushState({}, '', '/');
+    console.log('Redirect completed');
   };
 
   const handleLogout = () => {

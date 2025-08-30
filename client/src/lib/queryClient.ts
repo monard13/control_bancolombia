@@ -35,6 +35,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  console.log(`Making ${method} request to ${url}`, data ? 'with data:' : 'without data', data);
+  
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -42,7 +44,10 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  console.log(`Response received: ${res.status} ${res.statusText}`);
+  
   await throwIfResNotOk(res);
+  console.log(`Response validated successfully`);
   return res;
 }
 

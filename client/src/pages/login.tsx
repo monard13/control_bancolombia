@@ -58,8 +58,11 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
       }
     },
     onSuccess: (data) => {
+      console.log('Login onSuccess called with:', data);
       setLoginError("");
+      console.log('About to call onLoginSuccess with user:', data.user);
       onLoginSuccess(data.user);
+      console.log('onLoginSuccess called successfully');
     },
     onError: (error: any) => {
       console.error('Login error:', error);
