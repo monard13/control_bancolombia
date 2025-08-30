@@ -92,43 +92,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  // Create test users endpoint (for initial setup)
+  // Initialize predefined accounts endpoint (for production setup)
   app.post("/api/auth/setup", async (req, res) => {
     try {
-      const testUsers = [
-        {
-          username: "admin",
-          email: "admin@dominio.com",
-          password: await bcrypt.hash("admin123", 10),
-          role: "admin" as const
-        },
-        {
-          username: "usuario",
-          email: "usuario@dominio.com", 
-          password: await bcrypt.hash("user123", 10),
-          role: "user" as const
-        }
-      ];
-
-      const createdUsers = [];
-      for (const userData of testUsers) {
-        // Check if user already exists
-        const existingUser = await storage.getUserByEmail(userData.email);
-        if (!existingUser) {
-          const user = await storage.createUser(userData);
-          const { password, ...userWithoutPassword } = user;
-          createdUsers.push(userWithoutPassword);
-        }
-      }
-
+      const { initializePredefinedAccounts } = await import("./storage");
+      await initializePredefinedAccounts();
+      
       res.json({ 
-        message: `${createdUsers.length} usuarios de prueba creados`,
-        users: createdUsers 
+        message: "Cuentas predefinidas inicializadas correctamente",
+        accounts: [
+          { username: "admin", email: "aaron.monard@basesolution.app", role: "admin" },
+          { username: "usuario", email: "usuario@basesolution.app", role: "user" }
+        ]
       });
       
     } catch (error) {
-      console.error('Error creating test users:', error);
-      res.status(500).json({ error: "Error creando usuarios de prueba" });
+      console.error('Error initializing predefined accounts:', error);
+      res.status(500).json({ error: "Error inicializando cuentas predefinidas" });
     }
   });
 
