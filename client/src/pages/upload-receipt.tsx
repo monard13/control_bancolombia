@@ -15,7 +15,11 @@ interface ProcessingResult {
   receiptUrl?: string | null;
 }
 
-export default function UploadReceipt() {
+interface UploadReceiptProps {
+  userRole: 'admin' | 'user' | 'visitor';
+}
+
+export default function UploadReceipt({ userRole }: UploadReceiptProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -180,6 +184,13 @@ export default function UploadReceipt() {
           <p className="text-sm text-muted-foreground">
             Sube una imagen o PDF y extraeremos la información automáticamente
           </p>
+          {userRole === 'user' && (
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>ℹ️ Restricción de Usuario:</strong> Solo puedes registrar comprobantes de <strong>INGRESO</strong>
+              </p>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-6">
           <input
@@ -300,6 +311,7 @@ export default function UploadReceipt() {
           extractedData={extractedData}
           receiptImage={receiptImage || undefined}
           receiptUrl={receiptUrl || undefined}
+          userRole={userRole}
         />
       )}
     </div>

@@ -256,7 +256,9 @@ function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => v
           {(user.role === 'admin' || user.role === 'user') && (
             <>
               <Route path="/add-transaction" component={AddTransaction} />
-              <Route path="/upload-receipt" component={UploadReceipt} />
+              <Route path="/upload-receipt">
+                <UploadReceipt userRole={user.role} />
+              </Route>
               <Route path="/transactions" component={Transactions} />
             </>
           )}

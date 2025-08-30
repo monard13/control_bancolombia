@@ -31,6 +31,7 @@ interface ConfirmationModalProps {
   extractedData: ExtractedData;
   receiptImage?: string;
   receiptUrl?: string;
+  userRole?: 'admin' | 'user' | 'visitor';
 }
 
 export function ConfirmationModal({
@@ -38,12 +39,13 @@ export function ConfirmationModal({
   onClose,
   extractedData,
   receiptImage,
-  receiptUrl
+  receiptUrl,
+  userRole = 'admin'
 }: ConfirmationModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>(
-    extractedData.amount && extractedData.amount > 0 ? 'expense' : 'expense'
+    userRole === 'user' ? 'income' : (extractedData.amount && extractedData.amount > 0 ? 'expense' : 'expense')
   );
 
   // Local form type that matches HTML form fields exactly
@@ -71,7 +73,7 @@ export function ConfirmationModal({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: transactionType,
+      type: userRole === 'user' ? 'income' : transactionType,
       amount: extractedData.amount?.toString() || '',
       description: extractedData.description || '',
       date: extractedData.date || new Date().toISOString().split('T')[0],
@@ -227,14 +229,21 @@ export function ConfirmationModal({
                         className="flex space-x-4"
                         data-testid="radio-extracted-type"
                       >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="expense" id="modal-expense" />
-                          <Label htmlFor="modal-expense">Egreso</Label>
-                        </div>
+                        {userRole !== 'user' && (
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="expense" id="modal-expense" />
+                            <Label htmlFor="modal-expense">Egreso</Label>
+                          </div>
+                        )}
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="income" id="modal-income" />
                           <Label htmlFor="modal-income">Ingreso</Label>
                         </div>
+                        {userRole === 'user' && (
+                          <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                            Solo puedes registrar ingresos
+                          </div>
+                        )}
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
