@@ -97,23 +97,32 @@ export class DatabaseStorage implements IStorage {
       whereConditions.push(lte(transactions.date, filters.endDate));
     }
 
-    const baseQuery = db.select().from(transactions);
+    const baseQuery = db.select().from(transactions)
+      .orderBy(desc(transactions.date));
     
-    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
-    const queryWithWhere = whereClause ? baseQuery.where(whereClause) : baseQuery;
-    const queryWithOrder = queryWithWhere.orderBy(desc(transactions.date));
+    if (whereConditions.length > 0) {
+      const queryWithWhere = baseQuery.where(and(...whereConditions));
+      
+      if (filters?.limit && filters?.offset) {
+        return await queryWithWhere.limit(filters.limit).offset(filters.offset);
+      } else if (filters?.limit) {
+        return await queryWithWhere.limit(filters.limit);
+      } else if (filters?.offset) {
+        return await queryWithWhere.offset(filters.offset);
+      }
+      
+      return await queryWithWhere;
+    }
     
-    let finalQuery = queryWithOrder;
-    
-    if (filters?.offset) {
-      finalQuery = finalQuery.offset(filters.offset);
+    if (filters?.limit && filters?.offset) {
+      return await baseQuery.limit(filters.limit).offset(filters.offset);
+    } else if (filters?.limit) {
+      return await baseQuery.limit(filters.limit);
+    } else if (filters?.offset) {
+      return await baseQuery.offset(filters.offset);
     }
 
-    if (filters?.limit) {
-      finalQuery = finalQuery.limit(filters.limit);
-    }
-
-    return await finalQuery;
+    return await baseQuery;
   }
 
   async updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction | undefined> {

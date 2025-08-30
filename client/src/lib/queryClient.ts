@@ -3,6 +3,13 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    
+    // If we get a 401, the user is not authenticated - force a page reload to go back to login
+    if (res.status === 401) {
+      window.location.reload();
+      throw new Error("Authentication required");
+    }
+    
     throw new Error(`${res.status}: ${text}`);
   }
 }
