@@ -270,7 +270,15 @@ function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => v
 }
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize from localStorage to persist across hot reloads
+    try {
+      const savedUser = localStorage.getItem('financetracker_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
 
   console.log('App rendering, current user state:', user);
 
@@ -278,13 +286,10 @@ function App() {
     console.log('=== HANDLE LOGIN CALLED ===');
     console.log('userData received:', userData);
     
+    // Save to localStorage to persist across reloads
+    localStorage.setItem('financetracker_user', JSON.stringify(userData));
     setUser(userData);
-    console.log('setUser called with:', userData);
-    
-    // Force a small delay to see if state update is delayed
-    setTimeout(() => {
-      console.log('State after 100ms:', user);
-    }, 100);
+    console.log('setUser called and saved to localStorage:', userData);
     
     // Redirect to dashboard after login
     window.history.pushState({}, '', '/');
@@ -292,6 +297,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('financetracker_user');
     setUser(null);
     queryClient.clear(); // Clear cached data
     window.history.pushState({}, '', '/');
