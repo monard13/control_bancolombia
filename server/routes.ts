@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import sharp from "sharp";
@@ -9,6 +9,22 @@ import { ObjectStorageService } from "./objectStorage";
 import { insertTransactionSchema, transactionFilterSchema, loginSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+
+// Extend Express Session interface
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+    userRole?: 'admin' | 'user' | 'visitor';
+  }
+}
+
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  next();
+};
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -43,6 +59,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isValidPassword) {
         return res.status(401).json({ error: "Credenciales incorrectas. Intente de nuevo." });
       }
+      
+      // Store user information in session
+      req.session.userId = user.id;
+      req.session.userRole = user.role as 'admin' | 'user' | 'visitor';
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
@@ -107,8 +127,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout route
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Could not log out" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
   // Get transaction summary for dashboard
-  app.get("/api/transactions/summary", async (req, res) => {
+  app.get("/api/transactions/summary", requireAuth, async (req, res) => {
     try {
       const summary = await storage.getTransactionsSummary();
       res.json(summary);
@@ -119,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get transactions with filters
-  app.get("/api/transactions", async (req, res) => {
+  app.get("/api/transactions", requireAuth, async (req, res) => {
     try {
       const filters = transactionFilterSchema.parse(req.query);
       const limit = parseInt(req.query.limit as string) || 25;
@@ -168,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new transaction
-  app.post("/api/transactions", async (req, res) => {
+  app.post("/api/transactions", requireAuth, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
       
@@ -191,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update transaction
-  app.put("/api/transactions/:id", async (req, res) => {
+  app.put("/api/transactions/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertTransactionSchema.partial().parse(req.body);
@@ -214,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Partial update transaction (for reconciliation status, etc.)
-  app.patch("/api/transactions/:id", async (req, res) => {
+  app.patch("/api/transactions/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertTransactionSchema.partial().parse(req.body);
@@ -232,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete transaction
-  app.delete("/api/transactions/:id", async (req, res) => {
+  app.delete("/api/transactions/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteTransaction(id);
@@ -249,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single transaction
-  app.get("/api/transactions/:id", async (req, res) => {
+  app.get("/api/transactions/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       const transaction = await storage.getTransaction(id);
@@ -266,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload and process receipt
-  app.post("/api/receipts/upload", upload.single('receipt'), async (req, res) => {
+  app.post("/api/receipts/upload", requireAuth, upload.single('receipt'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
