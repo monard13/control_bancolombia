@@ -16,9 +16,11 @@ import { Search, Edit, Eye, Trash2, ChevronLeft, ChevronRight, Plus, ShoppingCar
 
 interface TransactionTableProps {
   showFilters?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-export function TransactionTable({ showFilters = true }: TransactionTableProps) {
+export function TransactionTable({ showFilters = true, canEdit = true, canDelete = true }: TransactionTableProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
@@ -448,18 +450,19 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center space-x-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-primary hover:text-primary/80"
-                                  onClick={() => handleEditTransaction(transaction)}
-                                  data-testid={`button-edit-${transaction.id}`}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              </DialogTrigger>
+                            {canEdit && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-primary hover:text-primary/80"
+                                    onClick={() => handleEditTransaction(transaction)}
+                                    data-testid={`button-edit-${transaction.id}`}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </DialogTrigger>
                               <DialogContent className="sm:max-w-[425px]">
                                 <DialogHeader>
                                   <DialogTitle>Editar Transacción</DialogTitle>
@@ -530,7 +533,8 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                   </div>
                                 </form>
                               </DialogContent>
-                            </Dialog>
+                              </Dialog>
+                            )}
                             {transaction.receiptUrl && (
                               <Button
                                 variant="ghost"
@@ -542,16 +546,18 @@ export function TransactionTable({ showFilters = true }: TransactionTableProps) 
                                 <FileText className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive/80"
-                              onClick={() => handleDeleteTransaction(transaction.id)}
-                              disabled={deleteTransactionMutation.isPending}
-                              data-testid={`button-delete-${transaction.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive/80"
+                                onClick={() => handleDeleteTransaction(transaction.id)}
+                                disabled={deleteTransactionMutation.isPending}
+                                data-testid={`button-delete-${transaction.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

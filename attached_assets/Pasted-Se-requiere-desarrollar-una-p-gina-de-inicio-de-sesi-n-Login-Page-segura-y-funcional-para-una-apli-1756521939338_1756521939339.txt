@@ -1,0 +1,44 @@
+Se requiere desarrollar una página de inicio de sesión (Login Page) segura y funcional para una aplicación de seguimiento de finanzas. El sistema debe ser capaz de autenticar a los usuarios y redirigirlos a diferentes paneles (dashboards) según su rol asignado. Se definen tres roles: Administrador, Usuario y Visitante, cada uno con permisos específicos.
+2. Diseño y Componentes de la Página de Login:
+Estilo: Diseño limpio, moderno y centrado en la pantalla.
+Título Principal: "FINANCETRAKER" Colocar el logo de Base Solution.
+Campos del Formulario:
+Un campo de entrada para "Correo Electrónico".
+Un campo de entrada para "Contraseña" (el texto debe estar oculto, tipo password).
+Botón de Acción: Un botón con el texto "Ingresar".
+Manejo de Errores: Un espacio debajo del botón para mostrar mensajes de error, como "Credenciales incorrectas. Intente de nuevo". Este mensaje solo debe ser visible si el login falla.
+3. Definición de Roles y Permisos: El sistema debe gestionar tres tipos de cuentas con las siguientes características y credenciales de ejemplo para la prueba:
+a) Rol: Administrador
+Propósito: Tiene control total sobre la aplicación, los datos y los usuarios.
+Credenciales de ejemplo:
+Usuario: admin@dominio.com
+Contraseña: admin123
+Permisos al iniciar sesión:
+Acceso Total: Es redirigido a un "Dashboard de Administrador".
+Visualización: Puede ver todos los movimientos financieros (ingresos y gastos) de todos los usuarios.
+Edición de Contenido: Tiene la capacidad de agregar, modificar y eliminar cualquier registro financiero de cualquier usuario.
+Gestión de Usuarios: Puede crear, editar y eliminar las cuentas de otros usuarios (funcionalidad extra deseable).
+b) Rol: Usuario
+Propósito: Es el usuario estándar de la aplicación, que registra sus finanzas personales.
+Credenciales de ejemplo:
+Usuario: usuario@dominio.com
+Contraseña: user123
+Permisos al iniciar sesión:
+Acceso Personal: Es redirigido a su "Dashboard Personal" o "Mi Billetera".
+Visualización: Solo puede ver sus propios movimientos financieros. No tiene acceso a los datos de otros usuarios.
+Edición de Contenido: Solo puede incluir nuevos ingresos. Los botones para agregar gastos, modificar o eliminar registros deben estar deshabilitados o no ser visibles para este rol.
+c) Rol: Visitante
+Propósito: Un rol de solo lectura para auditoría o consulta, sin capacidad de alterar datos.
+Credenciales de ejemplo:
+Usuario: visitante@dominio.com
+Contraseña: guest123
+Permisos al iniciar sesión:
+Acceso de Solo Lectura: Es redirigido a un "Dashboard de Reportes" o "Vista General".
+Visualización: Puede visualizar todos los movimientos financieros de la plataforma (ingresos y gastos), pero sin poder identificar a qué usuario pertenecen (datos anónimos).
+Edición de Contenido: Cero permisos de edición. No debe tener visible ningún botón o formulario para agregar, modificar o eliminar datos. La interfaz debe ser puramente informativa.
+4. Flujo de Funcionamiento (Workflow):
+El usuario llega a la página de login.
+Introduce su correo y contraseña.
+Al hacer clic en "Ingresar", las credenciales se validan.
+Si son correctas: El sistema identifica el rol del usuario y lo redirige a su dashboard correspondiente (/admin, /usuario o /visitante).
+Si son incorrectas: La página no redirige y muestra el mensaje de error debajo del formulario.

@@ -6,8 +6,9 @@ import { storage } from "./storage";
 import { ocrService } from "./services/ocrService";
 import { aiService } from "./services/aiService";
 import { ObjectStorageService } from "./objectStorage";
-import { insertTransactionSchema, transactionFilterSchema } from "@shared/schema";
+import { insertTransactionSchema, transactionFilterSchema, loginSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -26,6 +27,86 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const credentials = loginSchema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(credentials.email);
+      if (!user) {
+        return res.status(401).json({ error: "Credenciales incorrectas. Intente de nuevo." });
+      }
+      
+      // Verify password
+      const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Credenciales incorrectas. Intente de nuevo." });
+      }
+      
+      // Return user data without password
+      const { password, ...userWithoutPassword } = user;
+      res.json({ 
+        user: userWithoutPassword,
+        message: "Login exitoso" 
+      });
+      
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error('Error during login:', error);
+        res.status(500).json({ error: "Error interno del servidor" });
+      }
+    }
+  });
+
+  // Create test users endpoint (for initial setup)
+  app.post("/api/auth/setup", async (req, res) => {
+    try {
+      const testUsers = [
+        {
+          username: "admin",
+          email: "admin@dominio.com",
+          password: await bcrypt.hash("admin123", 10),
+          role: "admin" as const
+        },
+        {
+          username: "usuario",
+          email: "usuario@dominio.com", 
+          password: await bcrypt.hash("user123", 10),
+          role: "user" as const
+        },
+        {
+          username: "visitante",
+          email: "visitante@dominio.com",
+          password: await bcrypt.hash("guest123", 10),
+          role: "visitor" as const
+        }
+      ];
+
+      const createdUsers = [];
+      for (const userData of testUsers) {
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(userData.email);
+        if (!existingUser) {
+          const user = await storage.createUser(userData);
+          const { password, ...userWithoutPassword } = user;
+          createdUsers.push(userWithoutPassword);
+        }
+      }
+
+      res.json({ 
+        message: `${createdUsers.length} usuarios de prueba creados`,
+        users: createdUsers 
+      });
+      
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      res.status(500).json({ error: "Error creando usuarios de prueba" });
+    }
+  });
+
   // Get transaction summary for dashboard
   app.get("/api/transactions/summary", async (req, res) => {
     try {

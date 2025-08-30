@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,19 +10,62 @@ import Dashboard from "@/pages/dashboard";
 import AddTransaction from "@/pages/add-transaction";
 import UploadReceipt from "@/pages/upload-receipt";
 import Transactions from "@/pages/transactions";
-import { ChartPie, Plus, Camera, List, ChartLine, Bell, Settings, Info, Building2, CreditCard, Hash, Key } from "lucide-react";
+import Login from "@/pages/login";
+import AdminDashboard from "@/pages/admin-dashboard";
+import UserDashboard from "@/pages/user-dashboard";
+import VisitorDashboard from "@/pages/visitor-dashboard";
+import { ChartPie, Plus, Camera, List, Bell, Settings, Info, Building2, CreditCard, Hash, Key, LogOut } from "lucide-react";
 import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-const navigation = [
-  { id: 'dashboard', label: 'Dashboard', icon: ChartPie, path: '/' },
-  { id: 'add-transaction', label: 'Nueva Transacción', icon: Plus, path: '/add-transaction' },
-  { id: 'upload-receipt', label: 'Subir Comprobante', icon: Camera, path: '/upload-receipt' },
-  { id: 'transactions', label: 'Historial', icon: List, path: '/transactions' },
-];
+type User = {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'user' | 'visitor';
+};
 
-function Header() {
+const getNavigationForRole = (role: string) => {
+  const baseNav = [
+    { id: 'dashboard', label: 'Dashboard', icon: ChartPie, path: '/' },
+  ];
+
+  if (role === 'admin') {
+    return [
+      ...baseNav,
+      { id: 'add-transaction', label: 'Nueva Transacción', icon: Plus, path: '/add-transaction' },
+      { id: 'upload-receipt', label: 'Subir Comprobante', icon: Camera, path: '/upload-receipt' },
+      { id: 'transactions', label: 'Historial', icon: List, path: '/transactions' },
+    ];
+  } else if (role === 'user') {
+    return [
+      ...baseNav,
+      { id: 'add-transaction', label: 'Agregar Ingreso', icon: Plus, path: '/add-transaction' },
+      { id: 'upload-receipt', label: 'Subir Comprobante', icon: Camera, path: '/upload-receipt' },
+      { id: 'transactions', label: 'Mis Transacciones', icon: List, path: '/transactions' },
+    ];
+  } else {
+    // visitor role - read-only
+    return baseNav;
+  }
+};
+
+function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge variant="default">Administrador</Badge>;
+      case 'user':
+        return <Badge variant="secondary">Usuario</Badge>;
+      case 'visitor':
+        return <Badge variant="outline">Visitante</Badge>;
+      default:
+        return <Badge variant="outline">Desconocido</Badge>;
+    }
+  };
+
   return (
     <header className="bg-card border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,12 +79,19 @@ function Header() {
                 data-testid="logo-base-solution"
               />
               <div className="flex flex-col">
-                <h1 className="text-xl font-bold text-foreground">FinanceTracker</h1>
+                <h1 className="text-xl font-bold text-foreground">FINANCETRACKER</h1>
                 <p className="text-xs text-muted-foreground font-medium">BASE SOLUTION SAS</p>
               </div>
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">
+                Bienvenido, <strong>{user.username}</strong>
+              </span>
+              {getRoleBadge(user.role)}
+            </div>
+
             <Dialog>
               <DialogTrigger asChild>
                 <Button 
@@ -110,14 +160,28 @@ function Header() {
                 </Card>
               </DialogContent>
             </Dialog>
+            
             <Button variant="ghost" size="sm" data-testid="button-notifications">
               <Bell className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="sm" data-testid="button-settings">
               <Settings className="w-5 h-5" />
             </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onLogout}
+              className="text-destructive hover:text-destructive/80"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+            
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center" data-testid="avatar-user">
-              <span className="text-primary-foreground text-sm font-medium">U</span>
+              <span className="text-primary-foreground text-sm font-medium">
+                {user.username.charAt(0).toUpperCase()}
+              </span>
             </div>
           </div>
         </div>
@@ -126,7 +190,9 @@ function Header() {
   );
 }
 
-function TabNavigation({ currentPath }: { currentPath: string }) {
+function TabNavigation({ currentPath, user }: { currentPath: string; user: User }) {
+  const navigation = getNavigationForRole(user.role);
+  
   return (
     <div className="flex flex-wrap gap-2 mb-8 bg-muted p-1 rounded-lg">
       {navigation.map((item) => {
@@ -154,24 +220,46 @@ function TabNavigation({ currentPath }: { currentPath: string }) {
   );
 }
 
-function Router() {
+function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
   // Simple path tracking for active tab styling
-  window.addEventListener('popstate', () => {
-    setCurrentPath(window.location.pathname);
-  });
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const getDashboardComponent = () => {
+    switch (user.role) {
+      case 'admin':
+        return AdminDashboard;
+      case 'user':
+        return UserDashboard;
+      case 'visitor':
+        return VisitorDashboard;
+      default:
+        return Dashboard;
+    }
+  };
 
   return (
     <>
-      <Header />
+      <Header user={user} onLogout={onLogout} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <TabNavigation currentPath={currentPath} />
+        <TabNavigation currentPath={currentPath} user={user} />
         <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/add-transaction" component={AddTransaction} />
-          <Route path="/upload-receipt" component={UploadReceipt} />
-          <Route path="/transactions" component={Transactions} />
+          <Route path="/" component={getDashboardComponent()} />
+          {(user.role === 'admin' || user.role === 'user') && (
+            <>
+              <Route path="/add-transaction" component={AddTransaction} />
+              <Route path="/upload-receipt" component={UploadReceipt} />
+              <Route path="/transactions" component={Transactions} />
+            </>
+          )}
           <Route component={NotFound} />
         </Switch>
       </div>
@@ -180,12 +268,30 @@ function Router() {
 }
 
 function App() {
+  const [user, setUser] = useState<User | null>(null);
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    // Redirect to dashboard after login
+    window.history.pushState({}, '', '/');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    queryClient.clear(); // Clear cached data
+    window.history.pushState({}, '', '/');
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="min-h-screen bg-background text-foreground">
           <Toaster />
-          <Router />
+          {user ? (
+            <AuthenticatedRouter user={user} onLogout={handleLogout} />
+          ) : (
+            <Login onLoginSuccess={handleLogin} />
+          )}
         </div>
       </TooltipProvider>
     </QueryClientProvider>
