@@ -287,15 +287,15 @@ function App() {
   const handleLogin = (userData: User) => {
     console.log('=== HANDLE LOGIN CALLED ===');
     console.log('userData received:', userData);
-
-    // Save to localStorage to persist across reloads
-    localStorage.setItem('financetracker_user', JSON.stringify(userData));
     setUser(userData);
     console.log('setUser called and saved to localStorage:', userData);
-
-    // Redirect to dashboard after login
-    window.history.pushState({}, '', '/');
+    localStorage.setItem('user', JSON.stringify(userData));
     console.log('=== HANDLE LOGIN COMPLETE ===');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
   };
 
   return (
