@@ -259,7 +259,9 @@ function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => v
               <Route path="/upload-receipt">
                 <UploadReceipt userRole={user.role} />
               </Route>
-              <Route path="/transactions" component={Transactions} />
+              <Route path="/transactions">
+                <Transactions userRole={user.role} />
+              </Route>
             </>
           )}
           <Route component={NotFound} />

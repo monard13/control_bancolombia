@@ -26,6 +26,16 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  if (req.session.userRole !== 'admin') {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+};
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -222,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update transaction
-  app.put("/api/transactions/:id", requireAuth, async (req, res) => {
+  app.put("/api/transactions/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertTransactionSchema.partial().parse(req.body);
@@ -245,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Partial update transaction (for reconciliation status, etc.)
-  app.patch("/api/transactions/:id", requireAuth, async (req, res) => {
+  app.patch("/api/transactions/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = insertTransactionSchema.partial().parse(req.body);
@@ -263,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete transaction
-  app.delete("/api/transactions/:id", requireAuth, async (req, res) => {
+  app.delete("/api/transactions/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteTransaction(id);
