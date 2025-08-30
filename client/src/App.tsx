@@ -282,20 +282,45 @@ function App() {
   });
   const [showRegister, setShowRegister] = useState(false);
 
-  console.log('App rendering, current user state:', user);
+
+  // Check if session is still valid when user is loaded from localStorage
+  useEffect(() => {
+    if (user) {
+      
+      // Make a test request to see if session is still valid
+      fetch('/api/transactions/summary', { 
+        credentials: 'include',
+        method: 'GET'
+      })
+      .then(response => {
+        if (response.status === 401) {
+          localStorage.removeItem('financetracker_user');
+          setUser(null);
+        } else {
+        }
+      })
+      .catch(error => {
+        localStorage.removeItem('financetracker_user');
+        setUser(null);
+      });
+    }
+  }, []); // Only run once when component mounts
 
   const handleLogin = (userData: User) => {
-    console.log('=== HANDLE LOGIN CALLED ===');
-    console.log('userData received:', userData);
+    
+    // Save to localStorage to persist across reloads
+    localStorage.setItem('financetracker_user', JSON.stringify(userData));
     setUser(userData);
-    console.log('setUser called and saved to localStorage:', userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    console.log('=== HANDLE LOGIN COMPLETE ===');
+    
+    // Redirect to dashboard after login
+    window.history.pushState({}, '', '/');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('financetracker_user');
     setUser(null);
-    localStorage.removeItem('user');
+    queryClient.clear(); // Clear cached data
+    window.history.pushState({}, '', '/');
   };
 
   return (

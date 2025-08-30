@@ -51,7 +51,6 @@ export default function Login({ onLoginSuccess, onShowRegister }: LoginPageProps
         credentials: 'include'
       });
       
-      console.log('Direct fetch response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -60,27 +59,20 @@ export default function Login({ onLoginSuccess, onShowRegister }: LoginPageProps
       }
       
       const data = await response.json();
-      console.log('Login successful, data:', data);
       return data;
     },
     onSuccess: (data) => {
-      console.log('=== LOGIN SUCCESS CALLBACK ===');
-      console.log('Received data:', data);
       
       // Clear any existing error
       setLoginError("");
       
       // Call the parent success handler
-      console.log('Calling onLoginSuccess with user:', data.user);
       onLoginSuccess(data.user);
       
-      console.log('=== LOGIN SUCCESS CALLBACK COMPLETE ===');
     },
     onError: (error: any) => {
-      console.log('=== LOGIN ERROR CALLBACK ===');
-      console.error('Error object:', error);
+      console.error('Login error:', error);
       setLoginError(error.message || "Error interno del servidor");
-      console.log('=== LOGIN ERROR CALLBACK COMPLETE ===');
     },
   });
 

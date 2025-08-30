@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Email service function
 async function sendWelcomeEmail(email: string, username: string) {
   // Configure email transporter (using Gmail as example)
-  const transporter = nodemailer.createTransporter({
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: 'monard.aaron@gmail.com',
