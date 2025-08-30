@@ -40,9 +40,22 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const response = await apiRequest('POST', '/api/auth/login', credentials);
-      const data = await response.json();
-      return data;
+      try {
+        console.log('Attempting login with:', credentials.email);
+        const response = await apiRequest('POST', '/api/auth/login', credentials);
+        console.log('Login response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Login response data:', data);
+        return data;
+      } catch (error) {
+        console.error('Login mutation error:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       setLoginError("");
