@@ -1,6 +1,7 @@
 import { users, transactions, type User, type InsertUser, type Transaction, type InsertTransaction } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, ilike, sql, sum } from "drizzle-orm";
+import bcryptjs from "bcryptjs";
 
 export interface IStorage {
   // User methods
@@ -182,3 +183,46 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Initialize predefined accounts
+export async function initializePredefinedAccounts() {
+  const predefinedAccounts = [
+    {
+      username: "admin",
+      email: "aaron.monard@basesolution.app", 
+      password: "123456*",
+      role: "admin" as const
+    },
+    {
+      username: "visitante",
+      email: "visitante@basesolution.app",
+      password: "123456*", 
+      role: "visitor" as const
+    }
+  ];
+
+  for (const account of predefinedAccounts) {
+    try {
+      // Check if account already exists
+      const existingUser = await storage.getUserByEmail(account.email);
+      if (!existingUser) {
+        // Hash the password
+        const hashedPassword = await bcryptjs.hash(account.password, 10);
+        
+        // Create the account
+        await storage.createUser({
+          username: account.username,
+          email: account.email,
+          password: hashedPassword,
+          role: account.role
+        });
+        
+        console.log(`✅ Created predefined ${account.role} account: ${account.username}`);
+      } else {
+        console.log(`ℹ️ Predefined ${account.role} account already exists: ${account.username}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to create predefined account ${account.username}:`, error);
+    }
+  }
+}

@@ -85,7 +85,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register new user endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      // Parse and force role to be "user" for security - only predefined accounts can have admin/visitor roles
+      const userData = insertUserSchema.parse({
+        ...req.body,
+        role: 'user' // Always force role to user during registration
+      });
       
       // Check if user already exists
       const existingUserByEmail = await storage.getUserByEmail(userData.email);
@@ -107,13 +111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword
       });
       
-      // Send welcome email
-      try {
-        await sendWelcomeEmail(user.email, user.username);
-      } catch (emailError) {
-        console.log('Warning: Could not send welcome email:', emailError);
-        // Continue with registration even if email fails
-      }
+      // Welcome email disabled temporarily
+      // try {
+      //   await sendWelcomeEmail(user.email, user.username);
+      // } catch (emailError) {
+      //   console.log('Warning: Could not send welcome email:', emailError);
+      //   // Continue with registration even if email fails
+      // }
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;

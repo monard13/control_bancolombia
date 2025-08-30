@@ -50,6 +50,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize predefined accounts
+  const { initializePredefinedAccounts } = await import("./storage");
+  await initializePredefinedAccounts();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
