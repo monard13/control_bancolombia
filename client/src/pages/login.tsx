@@ -24,9 +24,10 @@ interface LoginResponse {
 
 interface LoginPageProps {
   onLoginSuccess: (user: LoginResponse['user']) => void;
+  onShowRegister?: () => void;
 }
 
-export default function Login({ onLoginSuccess }: LoginPageProps) {
+export default function Login({ onLoginSuccess, onShowRegister }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string>("");
 
@@ -192,7 +193,17 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
             </form>
           </Form>
 
-          <div className="text-center">
+          <div className="text-center space-y-4">
+            {onShowRegister && (
+              <Button
+                variant="outline"
+                onClick={onShowRegister}
+                className="w-full"
+              >
+                ¿No tienes cuenta? Regístrate aquí
+              </Button>
+            )}
+            
             <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>Cuentas de prueba:</strong></p>
               <p>admin@dominio.com / admin123</p>

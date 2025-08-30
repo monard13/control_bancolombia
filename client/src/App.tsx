@@ -19,6 +19,7 @@ import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Register from "@/pages/register"; // Assuming Register component is created
 
 type User = {
   id: string;
@@ -72,9 +73,9 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <img 
-                src={baseSolutionLogo} 
-                alt="Base Solution SAS Logo" 
+              <img
+                src={baseSolutionLogo}
+                alt="Base Solution SAS Logo"
                 className="w-10 h-10 object-contain"
                 data-testid="logo-base-solution"
               />
@@ -94,8 +95,8 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
 
             <Dialog>
               <DialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   className="flex items-center space-x-1"
                   data-testid="button-bank-info"
@@ -124,7 +125,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
                           <p className="text-sm text-muted-foreground">Bancolombia</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
                         <CreditCard className="w-4 h-4 text-primary" />
                         <div>
@@ -132,7 +133,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
                           <p className="text-sm text-muted-foreground font-mono">83600004845</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
                         <Hash className="w-4 h-4 text-primary" />
                         <div>
@@ -140,7 +141,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
                           <p className="text-sm text-muted-foreground font-mono">901489530</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
                         <Key className="w-4 h-4 text-primary" />
                         <div>
@@ -149,7 +150,7 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                       <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
                         <strong>Base Solution SAS</strong><br />
@@ -160,24 +161,24 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
                 </Card>
               </DialogContent>
             </Dialog>
-            
+
             <Button variant="ghost" size="sm" data-testid="button-notifications">
               <Bell className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="sm" data-testid="button-settings">
               <Settings className="w-5 h-5" />
             </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
+
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onLogout}
               className="text-destructive hover:text-destructive/80"
               data-testid="button-logout"
             >
               <LogOut className="w-5 h-5" />
             </Button>
-            
+
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center" data-testid="avatar-user">
               <span className="text-primary-foreground text-sm font-medium">
                 {user.username.charAt(0).toUpperCase()}
@@ -192,13 +193,13 @@ function Header({ user, onLogout }: { user: User; onLogout: () => void }) {
 
 function TabNavigation({ currentPath, user }: { currentPath: string; user: User }) {
   const navigation = getNavigationForRole(user.role);
-  
+
   return (
     <div className="flex flex-wrap gap-2 mb-8 bg-muted p-1 rounded-lg">
       {navigation.map((item) => {
         const IconComponent = item.icon;
         const isActive = currentPath === item.path;
-        
+
         return (
           <Button
             key={item.id}
@@ -222,13 +223,13 @@ function TabNavigation({ currentPath, user }: { currentPath: string; user: User 
 
 function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  
+
   // Simple path tracking for active tab styling
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
     };
-    
+
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -279,28 +280,22 @@ function App() {
       return null;
     }
   });
+  const [showRegister, setShowRegister] = useState(false);
 
   console.log('App rendering, current user state:', user);
 
   const handleLogin = (userData: User) => {
     console.log('=== HANDLE LOGIN CALLED ===');
     console.log('userData received:', userData);
-    
+
     // Save to localStorage to persist across reloads
     localStorage.setItem('financetracker_user', JSON.stringify(userData));
     setUser(userData);
     console.log('setUser called and saved to localStorage:', userData);
-    
+
     // Redirect to dashboard after login
     window.history.pushState({}, '', '/');
     console.log('=== HANDLE LOGIN COMPLETE ===');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('financetracker_user');
-    setUser(null);
-    queryClient.clear(); // Clear cached data
-    window.history.pushState({}, '', '/');
   };
 
   return (
@@ -308,10 +303,20 @@ function App() {
       <TooltipProvider>
         <div className="min-h-screen bg-background text-foreground">
           <Toaster />
-          {user ? (
-            <AuthenticatedRouter user={user} onLogout={handleLogout} />
+          {!user ? (
+            showRegister ? (
+              <Register
+                onBackToLogin={() => setShowRegister(false)}
+                onRegisterSuccess={() => setShowRegister(false)}
+              />
+            ) : (
+              <Login
+                onLoginSuccess={handleLogin}
+                onShowRegister={() => setShowRegister(true)}
+              />
+            )
           ) : (
-            <Login onLoginSuccess={handleLogin} />
+            <AuthenticatedRouter user={user} onLogout={handleLogout} />
           )}
         </div>
       </TooltipProvider>
