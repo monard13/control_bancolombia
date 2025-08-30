@@ -109,7 +109,7 @@ export default function UserDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TransactionTable canEdit={false} canDelete={false} />
+          <TransactionTable canEdit={false} canDelete={false} canExport={false} />
         </CardContent>
       </Card>
     </div>

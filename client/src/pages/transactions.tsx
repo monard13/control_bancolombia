@@ -7,13 +7,15 @@ interface TransactionsProps {
 export default function Transactions({ userRole = 'user' }: TransactionsProps) {
   const canEdit = userRole === 'admin';
   const canDelete = userRole === 'admin';
+  const canExport = userRole === 'admin';
   
   return (
     <div className="space-y-6" data-testid="page-transactions">
       <TransactionTable 
         showFilters={true} 
         canEdit={canEdit} 
-        canDelete={canDelete} 
+        canDelete={canDelete}
+        canExport={canExport} 
       />
     </div>
   );

@@ -94,7 +94,7 @@ export default function AdminDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TransactionTable canEdit={true} canDelete={true} />
+          <TransactionTable canEdit={true} canDelete={true} canExport={true} />
         </CardContent>
       </Card>
     </div>

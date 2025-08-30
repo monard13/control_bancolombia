@@ -18,9 +18,10 @@ interface TransactionTableProps {
   showFilters?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  canExport?: boolean;
 }
 
-export function TransactionTable({ showFilters = true, canEdit = true, canDelete = true }: TransactionTableProps) {
+export function TransactionTable({ showFilters = true, canEdit = true, canDelete = true, canExport = true }: TransactionTableProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState({
@@ -339,16 +340,18 @@ export function TransactionTable({ showFilters = true, canEdit = true, canDelete
           <div className="flex justify-between items-center">
             <CardTitle>Historial de Transacciones</CardTitle>
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={exportToCSV}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-                data-testid="button-export-csv"
-              >
-                <Download className="w-4 h-4" />
-                <span>Exportar CSV</span>
-              </Button>
+              {canExport && (
+                <Button
+                  onClick={exportToCSV}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                  data-testid="button-export-csv"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Exportar CSV</span>
+                </Button>
+              )}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Mostrar:</span>
                 <Select
