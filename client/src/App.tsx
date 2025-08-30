@@ -272,13 +272,23 @@ function AuthenticatedRouter({ user, onLogout }: { user: User; onLogout: () => v
 function App() {
   const [user, setUser] = useState<User | null>(null);
 
+  console.log('App rendering, current user state:', user);
+
   const handleLogin = (userData: User) => {
-    console.log('handleLogin called with userData:', userData);
+    console.log('=== HANDLE LOGIN CALLED ===');
+    console.log('userData received:', userData);
+    
     setUser(userData);
-    console.log('User state set, redirecting to dashboard');
+    console.log('setUser called with:', userData);
+    
+    // Force a small delay to see if state update is delayed
+    setTimeout(() => {
+      console.log('State after 100ms:', user);
+    }, 100);
+    
     // Redirect to dashboard after login
     window.history.pushState({}, '', '/');
-    console.log('Redirect completed');
+    console.log('=== HANDLE LOGIN COMPLETE ===');
   };
 
   const handleLogout = () => {

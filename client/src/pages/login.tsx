@@ -40,48 +40,46 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      try {
-        console.log('Attempting login with:', credentials.email);
-        const response = await apiRequest('POST', '/api/auth/login', credentials);
-        console.log('Login response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('Login response data:', data);
-        return data;
-      } catch (error) {
-        console.error('Login mutation error:', error);
-        throw error;
+      // Direct fetch without apiRequest to isolate the issue
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
+      
+      console.log('Direct fetch response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Login failed with status:', response.status, 'Error:', errorText);
+        throw new Error(`Login failed: ${response.status} ${errorText}`);
       }
+      
+      const data = await response.json();
+      console.log('Login successful, data:', data);
+      return data;
     },
     onSuccess: (data) => {
-      console.log('Login onSuccess called with:', data);
+      console.log('=== LOGIN SUCCESS CALLBACK ===');
+      console.log('Received data:', data);
+      
+      // Clear any existing error
       setLoginError("");
-      console.log('About to call onLoginSuccess with user:', data.user);
+      
+      // Call the parent success handler
+      console.log('Calling onLoginSuccess with user:', data.user);
       onLoginSuccess(data.user);
-      console.log('onLoginSuccess called successfully');
+      
+      console.log('=== LOGIN SUCCESS CALLBACK COMPLETE ===');
     },
     onError: (error: any) => {
-      console.error('Login error:', error);
-      let errorMessage = "Error interno del servidor";
-      
-      if (error?.message) {
-        // Try to parse error message for more specific info
-        if (error.message.includes('401')) {
-          errorMessage = "Credenciales incorrectas. Intente de nuevo.";
-        } else if (error.message.includes('500')) {
-          errorMessage = "Error interno del servidor. Intente más tarde.";
-        } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
-          errorMessage = "Error de conexión. Verifique su conexión a internet.";
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      setLoginError(errorMessage);
+      console.log('=== LOGIN ERROR CALLBACK ===');
+      console.error('Error object:', error);
+      setLoginError(error.message || "Error interno del servidor");
+      console.log('=== LOGIN ERROR CALLBACK COMPLETE ===');
     },
   });
 
