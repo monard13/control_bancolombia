@@ -44,13 +44,13 @@ app.use(session({
   name: 'financetracker.sid',
 }));
 
+// Aplicar CSRF protection a todas las rutas /api
+app.use('/api', csrfProtection);
+
 // Configurar Swagger
 if (process.env.NODE_ENV === 'development') {
   setupSwagger(app);
 }
-
-// Aplicar CSRF protection a todas las rutas /api
-app.use('/api', csrfProtection);
 
 // Validar variables de entorno
 import { validateEnv } from './utils/validation';
