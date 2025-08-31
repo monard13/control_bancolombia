@@ -1,0 +1,900 @@
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceTracker - Gestión de Movimientos Financieros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    success: "var(--success)",
+                    warning: "var(--warning)",
+                }
+            },
+            fontFamily: {
+                sans: ["Inter", "system-ui", "sans-serif"],
+            }
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(222.2 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 84% 4.9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222.2 84% 4.9%);
+            --primary: hsl(221.2 83.2% 53.3%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(222.2 84% 4.9%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(210 40% 96%);
+            --accent-foreground: hsl(222.2 84% 4.9%);
+            --destructive: hsl(0 84.2% 60.2%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --success: hsl(142.1 76.2% 36.3%);
+            --warning: hsl(38.3 86.8% 55.9%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(221.2 83.2% 53.3%);
+            --radius: 0.75rem;
+        }
+
+        .dark {
+            --background: hsl(222.2 84% 4.9%);
+            --foreground: hsl(210 40% 98%);
+            --card: hsl(222.2 84% 4.9%);
+            --card-foreground: hsl(210 40% 98%);
+            --popover: hsl(222.2 84% 4.9%);
+            --popover-foreground: hsl(210 40% 98%);
+            --primary: hsl(217.2 91.2% 59.8%);
+            --primary-foreground: hsl(222.2 84% 4.9%);
+            --secondary: hsl(217.2 32.6% 17.5%);
+            --secondary-foreground: hsl(210 40% 98%);
+            --muted: hsl(217.2 32.6% 17.5%);
+            --muted-foreground: hsl(215 20.2% 65.1%);
+            --accent: hsl(217.2 32.6% 17.5%);
+            --accent-foreground: hsl(210 40% 98%);
+            --destructive: hsl(0 62.8% 30.6%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(217.2 32.6% 17.5%);
+            --input: hsl(217.2 32.6% 17.5%);
+            --ring: hsl(224.3 76.3% 94.0%);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .tab-active {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: var(--accent);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: var(--accent);
+        }
+
+        .transaction-income {
+            color: var(--success);
+        }
+
+        .transaction-expense {
+            color: var(--destructive);
+        }
+
+        .processing-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+    <!-- @COMPONENT: Header [navigation and user info] -->
+    <header class="bg-card border-b border-border shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-chart-line text-primary text-2xl"></i>
+                        <h1 class="text-xl font-bold text-foreground">FinanceTracker</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button class="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                        <span class="text-primary-foreground text-sm font-medium">U</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- @COMPONENT: TabNavigation [main navigation tabs] -->
+        <div class="flex flex-wrap gap-2 mb-8 bg-muted p-1 rounded-lg">
+            <button id="dashboard-tab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors tab-active">
+                <i class="fas fa-chart-pie mr-2"></i>Dashboard
+            </button>
+            <button id="add-transaction-tab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent">
+                <i class="fas fa-plus mr-2"></i>Nueva Transacción
+            </button>
+            <button id="upload-receipt-tab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent">
+                <i class="fas fa-camera mr-2"></i>Subir Comprobante
+            </button>
+            <button id="transactions-tab" class="px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent">
+                <i class="fas fa-list mr-2"></i>Historial
+            </button>
+        </div>
+        <!-- @END_COMPONENT: TabNavigation -->
+
+        <!-- @COMPONENT: DashboardView [overview and summary] -->
+        <div id="dashboard-view" class="space-y-6">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-card rounded-lg p-6 border border-border shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-muted-foreground">Balance Total</p>
+                            <p class="text-2xl font-bold text-foreground" data-bind="totalBalance">$25,430.50</p>
+                        </div>
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-wallet text-primary text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-card rounded-lg p-6 border border-border shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-muted-foreground">Ingresos del Mes</p>
+                            <p class="text-2xl font-bold transaction-income" data-bind="monthlyIncome">$8,750.00</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-arrow-up text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-card rounded-lg p-6 border border-border shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-muted-foreground">Gastos del Mes</p>
+                            <p class="text-2xl font-bold transaction-expense" data-bind="monthlyExpenses">$3,285.75</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-arrow-down text-red-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <div class="p-6 border-b border-border">
+                    <h3 class="text-lg font-semibold text-foreground">Transacciones Recientes</h3>
+                </div>
+                <div class="p-6">
+                    <!-- @MAP: recentTransactions.map(transaction => ( -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b border-border last:border-0">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-foreground" data-bind="transaction.description">Salario Quincenal</p>
+                                    <p class="text-sm text-muted-foreground" data-bind="transaction.category">Ingresos • Trabajo</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold transaction-income" data-bind="transaction.amount">+$2,500.00</p>
+                                <p class="text-sm text-muted-foreground" data-bind="transaction.date">Hoy, 14:30</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between py-3 border-b border-border last:border-0">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-shopping-cart text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-foreground" data-bind="transaction.description">Compras en Supermercado</p>
+                                    <p class="text-sm text-muted-foreground" data-bind="transaction.category">Gastos • Alimentación</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold transaction-expense" data-bind="transaction.amount">-$145.80</p>
+                                <p class="text-sm text-muted-foreground" data-bind="transaction.date">Ayer, 18:45</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between py-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-gas-pump text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-foreground" data-bind="transaction.description">Gasolina</p>
+                                    <p class="text-sm text-muted-foreground" data-bind="transaction.category">Gastos • Transporte</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold transaction-expense" data-bind="transaction.amount">-$75.00</p>
+                                <p class="text-sm text-muted-foreground" data-bind="transaction.date">2 días atrás</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: DashboardView -->
+
+        <!-- @COMPONENT: AddTransactionView [manual transaction entry] -->
+        <div id="add-transaction-view" class="hidden space-y-6">
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <div class="p-6 border-b border-border">
+                    <h3 class="text-lg font-semibold text-foreground">Nueva Transacción Manual</h3>
+                    <p class="text-sm text-muted-foreground mt-1">Registra ingresos y gastos manualmente</p>
+                </div>
+                <div class="p-6">
+                    <form class="space-y-6">
+                        <!-- Transaction Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Tipo de Transacción</label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center">
+                                    <input type="radio" name="type" value="income" class="sr-only" checked>
+                                    <div class="w-4 h-4 border-2 border-primary rounded-full flex items-center justify-center mr-2">
+                                        <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    </div>
+                                    <span class="text-sm text-foreground">Ingreso</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="type" value="expense" class="sr-only">
+                                    <div class="w-4 h-4 border-2 border-border rounded-full flex items-center justify-center mr-2">
+                                        <div class="w-2 h-2 bg-transparent rounded-full"></div>
+                                    </div>
+                                    <span class="text-sm text-foreground">Gasto</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Amount -->
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Cantidad</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                <input type="number" step="0.01" placeholder="0.00" 
+                                       class="w-full pl-8 pr-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Descripción</label>
+                            <input type="text" placeholder="Ej: Compra en supermercado, Salario, etc."
+                                   class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Categoría</label>
+                            <select class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                <option value="">Seleccionar categoría</option>
+                                <optgroup label="Ingresos">
+                                    <option value="salary">Salario</option>
+                                    <option value="freelance">Trabajo Independiente</option>
+                                    <option value="investment">Inversiones</option>
+                                    <option value="other-income">Otros Ingresos</option>
+                                </optgroup>
+                                <optgroup label="Gastos">
+                                    <option value="food">Alimentación</option>
+                                    <option value="transport">Transporte</option>
+                                    <option value="utilities">Servicios</option>
+                                    <option value="entertainment">Entretenimiento</option>
+                                    <option value="healthcare">Salud</option>
+                                    <option value="other-expense">Otros Gastos</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Date -->
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Fecha</label>
+                            <input type="date" value="2024-01-15"
+                                   class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" class="px-6 py-2 border border-border rounded-md text-foreground hover:bg-accent transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                                <i class="fas fa-save mr-2"></i>Guardar Transacción
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: AddTransactionView -->
+
+        <!-- @COMPONENT: UploadReceiptView [receipt upload and OCR processing] -->
+        <div id="upload-receipt-view" class="hidden space-y-6">
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <div class="p-6 border-b border-border">
+                    <h3 class="text-lg font-semibold text-foreground">Subir Comprobante de Pago</h3>
+                    <p class="text-sm text-muted-foreground mt-1">Sube una imagen o PDF y extraeremos la información automáticamente</p>
+                </div>
+                <div class="p-6">
+                    <!-- @FUNCTIONALITY: This upload area should implement drag & drop file upload with OCR processing -->
+                    <div class="upload-area rounded-lg p-8 text-center mb-6">
+                        <div class="mb-4">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-muted-foreground"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-foreground mb-2">Arrastra tu comprobante aquí</h4>
+                        <p class="text-sm text-muted-foreground mb-4">o haz clic para seleccionar archivo</p>
+                        <button class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                            <i class="fas fa-folder-open mr-2"></i>Seleccionar Archivo
+                        </button>
+                        <p class="text-xs text-muted-foreground mt-3">Formatos soportados: JPG, PNG, PDF (máx. 10MB)</p>
+                    </div>
+
+                    <!-- Processing State (hidden by default) -->
+                    <div id="processing-state" class="hidden bg-accent rounded-lg p-6 text-center">
+                        <div class="processing-animation mb-4">
+                            <i class="fas fa-cog fa-spin text-3xl text-primary"></i>
+                        </div>
+                        <h4 class="text-lg font-medium text-foreground mb-2">Procesando Comprobante</h4>
+                        <p class="text-sm text-muted-foreground">Extrayendo información del documento...</p>
+                        <div class="w-full bg-muted rounded-full h-2 mt-4">
+                            <div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Uploads -->
+                    <div class="mt-8">
+                        <h4 class="text-md font-medium text-foreground mb-4">Archivos Recientes</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-accent rounded-md">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-image text-blue-500"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-foreground">recibo_gasolina_01.jpg</p>
+                                        <p class="text-xs text-muted-foreground">Procesado hace 2 minutos</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Completado</span>
+                                    <button class="text-primary hover:text-primary/80">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 bg-accent rounded-md">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <div>
+                                        <p class="text-sm font-medium text-foreground">factura_supermercado.pdf</p>
+                                        <p class="text-xs text-muted-foreground">Procesado hace 1 hora</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Completado</span>
+                                    <button class="text-primary hover:text-primary/80">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- @COMPONENT: DataConfirmationModal [extracted data validation] -->
+            <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div class="bg-card rounded-lg max-w-md w-full max-h-screen overflow-y-auto">
+                    <div class="p-6 border-b border-border">
+                        <h3 class="text-lg font-semibold text-foreground">Confirmar Datos Extraídos</h3>
+                        <p class="text-sm text-muted-foreground mt-1">Verifica y edita la información antes de guardar</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Extracted Receipt Preview -->
+                        <div class="mb-6">
+                            <!-- A receipt image showing a gas station purchase receipt -->
+                            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                                 alt="Imagen del comprobante procesado" 
+                                 class="w-full h-40 object-cover rounded-md border border-border">
+                        </div>
+
+                        <form class="space-y-4">
+                            <!-- Extracted Amount -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Cantidad Detectada</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                    <input type="number" value="75.00" step="0.01"
+                                           class="w-full pl-8 pr-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <!-- Extracted Description -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Descripción Detectada</label>
+                                <input type="text" value="GASOLINA MAGNA"
+                                       class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                            </div>
+
+                            <!-- Suggested Category -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Categoría Sugerida</label>
+                                <select class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                    <option value="transport" selected>Transporte</option>
+                                    <option value="other-expense">Otros Gastos</option>
+                                </select>
+                            </div>
+
+                            <!-- Extracted Date -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Fecha Detectada</label>
+                                <input type="date" value="2024-01-15"
+                                       class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                            </div>
+
+                            <!-- Transaction Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">Tipo de Transacción</label>
+                                <div class="flex space-x-4">
+                                    <label class="flex items-center">
+                                        <input type="radio" name="modal-type" value="expense" class="sr-only" checked>
+                                        <div class="w-4 h-4 border-2 border-primary rounded-full flex items-center justify-center mr-2">
+                                            <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                        </div>
+                                        <span class="text-sm text-foreground">Gasto</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" name="modal-type" value="income" class="sr-only">
+                                        <div class="w-4 h-4 border-2 border-border rounded-full flex items-center justify-center mr-2">
+                                            <div class="w-2 h-2 bg-transparent rounded-full"></div>
+                                        </div>
+                                        <span class="text-sm text-foreground">Ingreso</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Confidence Score -->
+                            <div class="bg-accent rounded-md p-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-foreground">Confianza de Extracción</span>
+                                    <span class="text-sm text-primary font-medium">87%</span>
+                                </div>
+                                <div class="w-full bg-muted rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 87%"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="p-6 border-t border-border flex justify-end space-x-4">
+                        <button type="button" class="px-6 py-2 border border-border rounded-md text-foreground hover:bg-accent transition-colors">
+                            <i class="fas fa-times mr-2"></i>Rechazar
+                        </button>
+                        <button type="button" class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                            <i class="fas fa-check mr-2"></i>Confirmar y Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: DataConfirmationModal -->
+        </div>
+        <!-- @END_COMPONENT: UploadReceiptView -->
+
+        <!-- @COMPONENT: TransactionsHistoryView [transaction list and filters] -->
+        <div id="transactions-view" class="hidden space-y-6">
+            <!-- Filters -->
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Buscar</label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"></i>
+                                <input type="text" placeholder="Buscar transacciones..."
+                                       class="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Tipo</label>
+                            <select class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                <option value="">Todos</option>
+                                <option value="income">Ingresos</option>
+                                <option value="expense">Gastos</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Categoría</label>
+                            <select class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                <option value="">Todas</option>
+                                <option value="food">Alimentación</option>
+                                <option value="transport">Transporte</option>
+                                <option value="salary">Salario</option>
+                                <option value="utilities">Servicios</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">Período</label>
+                            <select class="w-full px-4 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                <option value="all">Todo el tiempo</option>
+                                <option value="week">Esta semana</option>
+                                <option value="month" selected>Este mes</option>
+                                <option value="quarter">Este trimestre</option>
+                                <option value="year">Este año</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="bg-card rounded-lg border border-border shadow-sm">
+                <div class="p-6 border-b border-border">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-foreground">Historial de Transacciones</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-muted-foreground">Mostrar:</span>
+                            <select class="px-3 py-1 border border-input rounded text-sm bg-background focus:ring-2 focus:ring-ring focus:border-transparent">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-muted">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Descripción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Categoría</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Cantidad</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-card divide-y divide-border">
+                            <!-- @MAP: transactions.map(transaction => ( -->
+                            <tr class="hover:bg-accent transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-bind="transaction.date">
+                                    15 Ene 2024<br>
+                                    <span class="text-muted-foreground">14:30</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-plus text-green-600 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground" data-bind="transaction.description">Salario Quincenal</p>
+                                            <p class="text-xs text-muted-foreground">Transferencia bancaria</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full" data-bind="transaction.category">
+                                        Salario
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <span class="text-sm font-semibold transaction-income" data-bind="transaction.amount">+$2,500.00</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        <button class="text-primary hover:text-primary/80 transition-colors">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-muted-foreground hover:text-foreground transition-colors">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="text-destructive hover:text-destructive/80 transition-colors">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-accent transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                    14 Ene 2024<br>
+                                    <span class="text-muted-foreground">18:45</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-shopping-cart text-red-600 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground">Compras en Supermercado</p>
+                                            <p class="text-xs text-muted-foreground">Procesado por OCR</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        Alimentación
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <span class="text-sm font-semibold transaction-expense">-$145.80</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        <button class="text-primary hover:text-primary/80 transition-colors">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-muted-foreground hover:text-foreground transition-colors">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="text-destructive hover:text-destructive/80 transition-colors">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr class="hover:bg-accent transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                    13 Ene 2024<br>
+                                    <span class="text-muted-foreground">16:20</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-gas-pump text-red-600 text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-foreground">Gasolina</p>
+                                            <p class="text-xs text-muted-foreground">Procesado por OCR</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                                        Transporte
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <span class="text-sm font-semibold transaction-expense">-$75.00</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex justify-center space-x-2">
+                                        <button class="text-primary hover:text-primary/80 transition-colors">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-muted-foreground hover:text-foreground transition-colors">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="text-destructive hover:text-destructive/80 transition-colors">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- @END_MAP )) -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="px-6 py-4 border-t border-border">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-muted-foreground">
+                            Mostrando 1 a 25 de 156 transacciones
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-1 border border-border rounded text-sm hover:bg-accent transition-colors disabled:opacity-50" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">1</button>
+                            <button class="px-3 py-1 border border-border rounded text-sm hover:bg-accent transition-colors">2</button>
+                            <button class="px-3 py-1 border border-border rounded text-sm hover:bg-accent transition-colors">3</button>
+                            <span class="px-2">...</span>
+                            <button class="px-3 py-1 border border-border rounded text-sm hover:bg-accent transition-colors">7</button>
+                            <button class="px-3 py-1 border border-border rounded text-sm hover:bg-accent transition-colors">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: TransactionsHistoryView -->
+    </div>
+
+    <script>
+        (function() {
+            // TODO: Implement state management and API calls
+            
+            // Tab switching functionality
+            const tabs = {
+                'dashboard-tab': 'dashboard-view',
+                'add-transaction-tab': 'add-transaction-view',
+                'upload-receipt-tab': 'upload-receipt-view',
+                'transactions-tab': 'transactions-view'
+            };
+
+            // Initialize tab switching
+            Object.keys(tabs).forEach(tabId => {
+                const tab = document.getElementById(tabId);
+                const view = document.getElementById(tabs[tabId]);
+                
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    Object.keys(tabs).forEach(id => {
+                        document.getElementById(id).classList.remove('tab-active');
+                        document.getElementById(tabs[id]).classList.add('hidden');
+                    });
+                    
+                    // Add active class to clicked tab and show corresponding view
+                    tab.classList.add('tab-active');
+                    view.classList.remove('hidden');
+                });
+            });
+
+            // Upload area drag and drop simulation
+            const uploadArea = document.querySelector('.upload-area');
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    // TODO: Handle file upload and OCR processing
+                    simulateFileProcessing();
+                });
+
+                uploadArea.addEventListener('click', () => {
+                    // TODO: Open file dialog
+                    simulateFileProcessing();
+                });
+            }
+
+            // Simulate file processing
+            function simulateFileProcessing() {
+                const processingState = document.getElementById('processing-state');
+                const uploadArea = document.querySelector('.upload-area');
+                const confirmationModal = document.getElementById('confirmation-modal');
+                
+                if (processingState && uploadArea) {
+                    uploadArea.style.display = 'none';
+                    processingState.classList.remove('hidden');
+                    
+                    // Simulate processing time
+                    setTimeout(() => {
+                        processingState.classList.add('hidden');
+                        uploadArea.style.display = 'block';
+                        confirmationModal.classList.remove('hidden');
+                    }, 3000);
+                }
+            }
+
+            // Modal close functionality
+            const confirmationModal = document.getElementById('confirmation-modal');
+            if (confirmationModal) {
+                confirmationModal.addEventListener('click', (e) => {
+                    if (e.target === confirmationModal) {
+                        confirmationModal.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Radio button styling simulation
+            document.addEventListener('change', (e) => {
+                if (e.target.type === 'radio') {
+                    const name = e.target.name;
+                    const radios = document.querySelectorAll(`input[name="${name}"]`);
+                    
+                    radios.forEach(radio => {
+                        const indicator = radio.parentElement.querySelector('div');
+                        const dot = indicator.querySelector('div');
+                        
+                        if (radio.checked) {
+                            indicator.classList.add('border-primary');
+                            indicator.classList.remove('border-border');
+                            dot.classList.add('bg-primary');
+                            dot.classList.remove('bg-transparent');
+                        } else {
+                            indicator.classList.remove('border-primary');
+                            indicator.classList.add('border-border');
+                            dot.classList.remove('bg-primary');
+                            dot.classList.add('bg-transparent');
+                        }
+                    });
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

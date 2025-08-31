@@ -1,11 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+import { limiter, csrfProtection, securityHeaders } from "./middleware/security";
+import { setupSwagger } from "./utils/swagger";
+import { httpLogger } from "./utils/logger";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Aplicar medidas de seguridad
+app.use(securityHeaders);
+app.use(limiter);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Configurar Swagger
+if (process.env.NODE_ENV === 'development') {
+  setupSwagger(app);
+}
+
+// Configurar logging HTTP
+app.use(httpLogger);
+
+// Aplicar CSRF protection a todas las rutas /api
+app.use('/api', csrfProtection);
 
 import { config } from "./config";
 
@@ -25,19 +43,28 @@ app.use(session({
   name: 'financetracker.sid',
 }));
 
-// Simplified request logging for production
-app.use((req, res, next) => {
-  if (!config.isProduction) {
-    const start = Date.now();
-    const path = req.path;
+// Validar variables de entorno
+import { validateEnv } from './utils/validation';
+validateEnv();
 
-    res.on("finish", () => {
-      const duration = Date.now() - start;
-      if (path.startsWith("/api")) {
-        log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
-      }
-    });
-  }
+// Importar el logger personalizado
+import { log } from './utils/logger';
+
+// Request logging con el nuevo logger
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      log.info(`${req.method} ${path} ${res.statusCode}`, {
+        duration,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
+    }
+  });
   next();
 });
 
@@ -75,6 +102,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log.info(`Server started on port ${port}`);
   });
 })();
