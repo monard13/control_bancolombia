@@ -54,7 +54,14 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Login failed with status:', response.status, 'Error:', errorText);
-        throw new Error(`Login failed: ${response.status} ${errorText}`);
+        
+        // Parse error message from server
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || 'Error de login');
+        } catch {
+          throw new Error('Error de conexión con el servidor');
+        }
       }
       
       const data = await response.json();
@@ -183,6 +190,19 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
               </Button>
             </form>
           </Form>
+
+          {/* Development helper - show credentials */}
+          {import.meta.env.DEV && (
+            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                🔑 Credenciales de desarrollo:
+              </p>
+              <div className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+                <div><strong>Admin:</strong> aaron.monard@basesolution.app / 123456*</div>
+                <div><strong>Usuario:</strong> usuario@basesolution.app / user123456*</div>
+              </div>
+            </div>
+          )}
 
         </CardContent>
       </Card>
