@@ -7,19 +7,26 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure session middleware with production-ready settings
+// Configure session middleware with environment-specific settings
 const isProduction = process.env.NODE_ENV === 'production';
+const isDeployment = !!process.env.REPL_DEPLOYMENT;
+const isHTTPS = process.env.REPL_DEPLOYMENT === 'true' || 
+               (typeof process.env.REPLIT_URL === 'string' && process.env.REPLIT_URL.startsWith('https://'));
+
+console.log(`🌍 Environment: ${isProduction ? 'production' : 'development'}, Deployment: ${isDeployment}, HTTPS: ${isHTTPS}`);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'finance-tracker-secret-key-2024',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProduction, // HTTPS only in production
+    secure: isHTTPS, // HTTPS only when actually using HTTPS
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: isProduction ? 'strict' : 'lax', // CSRF protection in production
+    sameSite: isDeployment ? 'none' : 'lax', // None for cross-origin in deployment
+    domain: isDeployment ? undefined : undefined, // Let browser set automatically
   },
-  name: 'financetracker.sid', // Custom session name
+  name: 'financetracker.sid',
 }));
 
 app.use((req, res, next) => {

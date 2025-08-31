@@ -8,21 +8,25 @@ neonConfig.webSocketConstructor = ws;
 
 // Handle different database URL sources between development and production
 function getDatabaseUrl(): string {
-  // First try environment variable (development)
-  if (process.env.DATABASE_URL) {
-    console.log('✅ Using DATABASE_URL from environment');
-    return process.env.DATABASE_URL;
+  const isDeployment = !!process.env.REPL_DEPLOYMENT;
+  
+  // In deployment, prioritize /tmp/replitdb
+  if (isDeployment) {
+    try {
+      if (fs.existsSync('/tmp/replitdb')) {
+        const dbUrl = fs.readFileSync('/tmp/replitdb', 'utf8').trim();
+        console.log('✅ Using DATABASE_URL from /tmp/replitdb (deployment)');
+        return dbUrl;
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not read /tmp/replitdb in deployment:', error);
+    }
   }
   
-  // Then try /tmp/replitdb (production deployment)
-  try {
-    if (fs.existsSync('/tmp/replitdb')) {
-      const dbUrl = fs.readFileSync('/tmp/replitdb', 'utf8').trim();
-      console.log('✅ Using DATABASE_URL from /tmp/replitdb');
-      return dbUrl;
-    }
-  } catch (error) {
-    console.warn('⚠️ Could not read /tmp/replitdb:', error);
+  // Fallback to environment variable (preview/development)
+  if (process.env.DATABASE_URL) {
+    console.log('✅ Using DATABASE_URL from environment (preview/development)');
+    return process.env.DATABASE_URL;
   }
   
   throw new Error(

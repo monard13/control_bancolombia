@@ -53,10 +53,33 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Deployment diagnostic endpoint
+  app.get("/api/health", (req, res) => {
+    const isDeployment = !!process.env.REPL_DEPLOYMENT;
+    const isHTTPS = process.env.REPL_DEPLOYMENT === 'true' || 
+                   (typeof process.env.REPLIT_URL === 'string' && process.env.REPLIT_URL.startsWith('https://'));
+    
+    res.json({
+      status: "ok",
+      environment: process.env.NODE_ENV || "development",
+      deployment: isDeployment,
+      https: isHTTPS,
+      sessionConfig: {
+        secure: isHTTPS,
+        sameSite: isDeployment ? 'none' : 'lax',
+      },
+      database: {
+        source: isDeployment ? '/tmp/replitdb' : 'DATABASE_URL env var'
+      },
+      timestamp: new Date().toISOString()
+    });
+  });
+  
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
-      console.log('🔐 Login attempt for:', req.body.email);
+      const isDeployment = !!process.env.REPL_DEPLOYMENT;
+      console.log(`🔐 Login attempt for: ${req.body.email} (${isDeployment ? 'deployment' : 'preview'})`);
       const credentials = loginSchema.parse(req.body);
       
       // Find user by email
@@ -84,6 +107,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userRole = user.role as 'admin' | 'user';
       
       console.log('💾 Session stored. User ID:', user.id, 'Role:', user.role);
+      
+      // Force session save in deployment environment
+      if (process.env.REPL_DEPLOYMENT) {
+        await new Promise((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error('❌ Session save failed in deployment:', err);
+              reject(err);
+            } else {
+              console.log('✅ Session force-saved in deployment');
+              resolve(undefined);
+            }
+          });
+        });
+      }
       
       // Return user data without password
       const { password, ...userWithoutPassword } = user;
