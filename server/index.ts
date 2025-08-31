@@ -7,57 +7,37 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure session middleware with environment-specific settings
-const isProduction = process.env.NODE_ENV === 'production';
-// More robust deployment detection
-const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
-                        process.env.REPLIT_DEPLOYMENT || 
-                        (process.env.REPLIT_URL && !process.env.REPLIT_URL.includes('--')));
-const isHTTPS = !!(process.env.REPLIT_URL && process.env.REPLIT_URL.startsWith('https://'));
+import { config } from "./config";
 
-console.log(`🌍 Environment: ${isProduction ? 'production' : 'development'}, Deployment: ${isDeployment}, HTTPS: ${isHTTPS}`);
+console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'finance-tracker-secret-key-2024',
+  secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isHTTPS, // HTTPS only when actually using HTTPS
+    secure: config.isHTTPS,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: isDeployment ? 'none' : 'lax', // None for cross-origin in deployment
-    domain: isDeployment ? undefined : undefined, // Let browser set automatically
+    sameSite: config.isDeployment ? 'none' : 'lax',
+    domain: undefined, // Let browser set automatically
   },
   name: 'financetracker.sid',
 }));
 
+// Simplified request logging for production
 app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  if (!config.isProduction) {
+    const start = Date.now();
+    const path = req.path;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (path.startsWith("/api")) {
+        log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
+    });
+  }
   next();
 });
 

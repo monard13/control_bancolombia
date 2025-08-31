@@ -23,7 +23,7 @@ export interface IStorage {
   }): Promise<Transaction[]>;
   updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction | undefined>;
   deleteTransaction(id: string): Promise<boolean>;
-  getTransactionsSummary(): Promise<{
+  getTransactionsSummary(userId?: string): Promise<{
     totalBalance: number;
     monthlyIncome: number;
     monthlyExpenses: number;
@@ -150,34 +150,41 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  async getTransactionsSummary(): Promise<{
+  async getTransactionsSummary(userId?: string): Promise<{
     totalBalance: number;
     monthlyIncome: number;
     monthlyExpenses: number;
     transactionCount: number;
   }> {
-    const allTransactions = await db.select().from(transactions);
+    // Use SQL aggregation for better performance
+    const whereClause = userId ? eq(transactions.userId, userId) : undefined;
     
-    let totalBalance = 0;
-    let monthlyIncome = 0;
-    let monthlyExpenses = 0;
+    const incomeResult = await db
+      .select({ 
+        total: sum(sql`CAST(${transactions.amount} AS DECIMAL)`),
+        count: sql<number>`COUNT(*)::int`
+      })
+      .from(transactions)
+      .where(whereClause ? and(whereClause, eq(transactions.type, 'income')) : eq(transactions.type, 'income'));
 
-    allTransactions.forEach(t => {
-      const amount = parseFloat(t.amount);
-      if (t.type === 'income') {
-        totalBalance += amount;
-        monthlyIncome += amount;
-      } else {
-        totalBalance -= amount;
-        monthlyExpenses += amount;
-      }
-    });
+    const expenseResult = await db
+      .select({ 
+        total: sum(sql`CAST(${transactions.amount} AS DECIMAL)`),
+        count: sql<number>`COUNT(*)::int`
+      })
+      .from(transactions)
+      .where(whereClause ? and(whereClause, eq(transactions.type, 'expense')) : eq(transactions.type, 'expense'));
+
+    const monthlyIncome = parseFloat(incomeResult[0]?.total || '0');
+    const monthlyExpenses = parseFloat(expenseResult[0]?.total || '0');
+    const incomeCount = incomeResult[0]?.count || 0;
+    const expenseCount = expenseResult[0]?.count || 0;
 
     return {
-      totalBalance,
+      totalBalance: monthlyIncome - monthlyExpenses,
       monthlyIncome,
       monthlyExpenses,
-      transactionCount: allTransactions.length,
+      transactionCount: incomeCount + expenseCount,
     };
   }
 }
