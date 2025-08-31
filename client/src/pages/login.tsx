@@ -40,6 +40,8 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
+      console.log('🚀 Attempting login with:', { email: credentials.email, password: '[HIDDEN]' });
+      
       // Direct fetch without apiRequest to isolate the issue
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -49,6 +51,8 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
         body: JSON.stringify(credentials),
         credentials: 'include'
       });
+      
+      console.log('📡 Response received:', { status: response.status, ok: response.ok });
       
       
       if (!response.ok) {
