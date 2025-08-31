@@ -7,25 +7,30 @@ import { setupSwagger } from "./utils/swagger";
 
 const app = express();
 
+import { config } from "./config";
+
+console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
+
 // Aplicar medidas de seguridad
 app.use(securityHeaders);
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Configurar Swagger
-if (process.env.NODE_ENV === 'development') {
-  setupSwagger(app);
-}
+// Import connect-pg-simple
+import connectPgSimple from 'connect-pg-simple';
+import { pool } from './db';
 
-// Aplicar CSRF protection a todas las rutas /api
-app.use('/api', csrfProtection);
-
-import { config } from "./config";
-
-console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
+// Configurar sesión con PostgreSQL
+const PostgresqlStore = connectPgSimple(session);
 
 app.use(session({
+  store: new PostgresqlStore({
+    pool: pool,
+    tableName: 'session', // Nombre de la tabla para las sesiones
+    createTableIfMissing: true, // Crear la tabla si no existe
+    pruneSessionInterval: 60 * 60 // Limpiar sesiones expiradas cada hora
+  }),
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
@@ -38,6 +43,14 @@ app.use(session({
   },
   name: 'financetracker.sid',
 }));
+
+// Configurar Swagger
+if (process.env.NODE_ENV === 'development') {
+  setupSwagger(app);
+}
+
+// Aplicar CSRF protection a todas las rutas /api
+app.use('/api', csrfProtection);
 
 // Validar variables de entorno
 import { validateEnv } from './utils/validation';
