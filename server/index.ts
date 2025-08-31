@@ -4,7 +4,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { limiter, csrfProtection, securityHeaders } from "./middleware/security";
 import { setupSwagger } from "./utils/swagger";
-import { httpLogger } from "./utils/logger";
 
 const app = express();
 
@@ -18,9 +17,6 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 if (process.env.NODE_ENV === 'development') {
   setupSwagger(app);
 }
-
-// Configurar logging HTTP
-app.use(httpLogger);
 
 // Aplicar CSRF protection a todas las rutas /api
 app.use('/api', csrfProtection);
