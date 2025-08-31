@@ -9,9 +9,11 @@ app.use(express.urlencoded({ extended: false }));
 
 // Configure session middleware with environment-specific settings
 const isProduction = process.env.NODE_ENV === 'production';
-const isDeployment = !!process.env.REPL_DEPLOYMENT;
-const isHTTPS = process.env.REPL_DEPLOYMENT === 'true' || 
-               (typeof process.env.REPLIT_URL === 'string' && process.env.REPLIT_URL.startsWith('https://'));
+// More robust deployment detection
+const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
+                        process.env.REPLIT_DEPLOYMENT || 
+                        (process.env.REPLIT_URL && !process.env.REPLIT_URL.includes('--')));
+const isHTTPS = !!(process.env.REPLIT_URL && process.env.REPLIT_URL.startsWith('https://'));
 
 console.log(`🌍 Environment: ${isProduction ? 'production' : 'development'}, Deployment: ${isDeployment}, HTTPS: ${isHTTPS}`);
 

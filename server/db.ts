@@ -8,7 +8,9 @@ neonConfig.webSocketConstructor = ws;
 
 // Handle different database URL sources between development and production
 function getDatabaseUrl(): string {
-  const isDeployment = !!process.env.REPL_DEPLOYMENT;
+  const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
+                          process.env.REPLIT_DEPLOYMENT || 
+                          (process.env.REPLIT_URL && !process.env.REPLIT_URL.includes('--')));
   
   // In deployment, prioritize /tmp/replitdb
   if (isDeployment) {

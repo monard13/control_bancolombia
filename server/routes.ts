@@ -55,7 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Deployment diagnostic endpoint
   app.get("/api/health", (req, res) => {
-    const isDeployment = !!process.env.REPL_DEPLOYMENT;
+    const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
+                           process.env.REPLIT_DEPLOYMENT || 
+                           (process.env.REPLIT_URL && !process.env.REPLIT_URL.includes('--')));
     const isHTTPS = process.env.REPL_DEPLOYMENT === 'true' || 
                    (typeof process.env.REPLIT_URL === 'string' && process.env.REPLIT_URL.startsWith('https://'));
     
@@ -78,7 +80,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const isDeployment = !!process.env.REPL_DEPLOYMENT;
+      const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
+                             process.env.REPLIT_DEPLOYMENT || 
+                             (process.env.REPLIT_URL && !process.env.REPLIT_URL.includes('--')));
       console.log(`🔐 Login attempt for: ${req.body.email} (${isDeployment ? 'deployment' : 'preview'})`);
       const credentials = loginSchema.parse(req.body);
       
@@ -109,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('💾 Session stored. User ID:', user.id, 'Role:', user.role);
       
       // Force session save in deployment environment
-      if (process.env.REPL_DEPLOYMENT) {
+      if (isDeployment) {
         await new Promise((resolve, reject) => {
           req.session.save((err) => {
             if (err) {
