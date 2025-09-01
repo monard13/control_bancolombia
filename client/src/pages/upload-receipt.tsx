@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { type ExtractedData } from "@shared/schema";
 import { CloudUpload, FolderOpen, Settings, FileImage, File, Eye } from "lucide-react";
+import { getCsrfToken } from "@/lib/queryClient";
 
 interface ProcessingResult {
   extractedData: ExtractedData;
@@ -40,9 +41,14 @@ export default function UploadReceipt({ userRole }: UploadReceiptProps) {
       const formData = new FormData();
       formData.append('receipt', file);
 
+      const token = await getCsrfToken();
       const response = await fetch('/api/receipts/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
+        headers: {
+          'X-CSRF-Token': token,
+        },
       });
 
       if (!response.ok) {
