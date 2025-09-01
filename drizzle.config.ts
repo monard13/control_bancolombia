@@ -1,14 +1,19 @@
-import { defineConfig } from "drizzle-kit";
+import { defineConfig } from 'drizzle-kit';
+import { config } from './server/config';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+if (!config.databaseUrl) {
+  throw new Error('DATABASE_URL is not set');
 }
 
 export default defineConfig({
-  out: "./migrations",
-  schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  out: './migrations',
+  schema: './shared/schema.ts',
+  dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: config.databaseUrl,
   },
+  // Añade esta propiedad para forzar el modo SSL
+  driver: 'pg',
+  verbose: true,
+  strict: true,
 });
