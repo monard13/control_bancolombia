@@ -366,25 +366,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .jpeg({ quality: 90 })
         .toBuffer();
 
-      // Store the image in object storage for receipt keeping
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      
-      // Upload to object storage using the presigned URL
-      const uploadResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: imageBuffer,
-        headers: {
-          'Content-Type': 'image/jpeg',
-        },
-      });
+      // Store the image in object storage for receipt keeping (optional)
+      let receiptUrl: string | null = null;
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
 
-      if (!uploadResponse.ok) {
-        console.error('Failed to upload to object storage:', uploadResponse.statusText);
+        // Upload to object storage using the presigned URL
+        const uploadResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: imageBuffer,
+          headers: {
+            'Content-Type': 'image/jpeg',
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          console.error('Failed to upload to object storage:', uploadResponse.statusText);
+        } else {
+          // Get the object path from the upload URL for later reference
+          receiptUrl = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        }
+      } catch (storageError) {
+        // If object storage is not configured or unavailable, log and continue
+        console.error('Object storage unavailable:', storageError);
       }
-
-      // Get the object path from the upload URL for later reference
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
       // Extract text using OCR
       const ocrText = await ocrService.processImage(imageBuffer);
@@ -419,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         extractedData,
         ocrText,
         aiAvailable,
-        receiptUrl: uploadResponse.ok ? objectPath : null,
+        receiptUrl,
         message: aiAvailable 
           ? "Receipt processed successfully with AI analysis"
           : "Receipt processed with OCR only - AI analysis unavailable (check OpenAI credits)"
