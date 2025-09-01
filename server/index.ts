@@ -3,8 +3,16 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { limiter, csrfProtection, securityHeaders } from "./middleware/security";
+import { setupSwagger } from "./utils/swagger";
+import connectPgSimple from 'connect-pg-simple';
+import { pool } from './db';
+import { config } from "./config";
+import { validateEnv } from './utils/validation';
+import { log } from './utils/logger';
 
 const app = express();
+
+console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
 
 // Aplicar medidas de seguridad
 app.use(securityHeaders);
@@ -12,14 +20,14 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Aplicar CSRF protection a todas las rutas /api
-app.use('/api', csrfProtection);
-
-import { config } from "./config";
-
-console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
-
+// Configurar sesión con PostgreSQL ANTES de CSRF
+const PostgresqlStore = connectPgSimple(session);
 app.use(session({
+  store: new PostgresqlStore({
+    pool: pool,
+    tableName: 'session', // Nombre de la tabla para las sesiones
+    createTableIfMissing: true, // Crear la tabla si no existe
+  }),
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
@@ -33,12 +41,16 @@ app.use(session({
   name: 'financetracker.sid',
 }));
 
-// Validar variables de entorno
-import { validateEnv } from './utils/validation';
-validateEnv();
+// Aplicar CSRF protection a todas las rutas /api
+app.use('/api', csrfProtection);
 
-// Importar el logger personalizado
-import { log } from './utils/logger';
+// Configurar Swagger
+if (process.env.NODE_ENV === 'development') {
+  setupSwagger(app);
+}
+
+// Validar variables de entorno
+validateEnv();
 
 // Request logging con el nuevo logger
 app.use((req, res, next) => {
@@ -73,19 +85,14 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Configurar Vite en desarrollo
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Iniciar el servidor
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
@@ -93,5 +100,5 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log.info(`Server started on port ${port}`);
-  });// Final version
+  });
 })();
