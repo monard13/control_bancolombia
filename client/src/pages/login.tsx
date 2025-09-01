@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { loginSchema, type LoginCredentials } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getCsrfToken } from "@/lib/queryClient";
 import baseSolutionLogo from "@assets/Logo BS COL_1756425179703.jpg";
 
 interface LoginResponse {
@@ -41,33 +41,9 @@ export default function Login({ onLoginSuccess }: LoginPageProps) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
       console.log('🚀 Attempting login with:', { email: credentials.email, password: '[HIDDEN]' });
-      
-      // Direct fetch without apiRequest to isolate the issue
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-        credentials: 'include'
-      });
-      
-      console.log('📡 Response received:', { status: response.status, ok: response.ok });
-      
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Login failed with status:', response.status, 'Error:', errorText);
-        
-        // Parse error message from server
-        try {
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || 'Error de login');
-        } catch {
-          throw new Error('Error de conexión con el servidor');
-        }
-      }
-      
+
+      await getCsrfToken(true);
+      const response = await apiRequest('POST', '/api/auth/login', credentials);
       const data = await response.json();
       return data;
     },

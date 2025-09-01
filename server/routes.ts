@@ -52,7 +52,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   // Deployment diagnostic endpoint
   app.get("/api/health", (req, res) => {
     const isDeployment = !!(process.env.REPL_DEPLOYMENT || 
@@ -76,7 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString()
     });
   });
-  
+
+  // CSRF token endpoint
+  app.get('/api/csrf-token', (req, res) => {
+    const token = req.csrfToken();
+    res.set('X-CSRF-Token', token);
+    res.json({ csrfToken: token });
+  });
+
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
