@@ -1,18 +1,6 @@
-import type { Config } from 'jest';
+// Jest setup file
+import { config } from '../config';
 import { jest } from '@jest/globals';
-
-// Mock de configuración
-const mockConfig = {
-  isProduction: false,
-  isDeployment: false,
-  isHTTPS: false,
-  port: 5000,
-  sessionSecret: 'test-secret'
-};
-
-jest.mock('../config', () => ({
-  config: mockConfig
-}));
 
 // Establecer variables de entorno para testing
 process.env.NODE_ENV = 'test';

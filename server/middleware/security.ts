@@ -1,23 +1,32 @@
-import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import csurf from 'csurf';
+import csrf from 'csurf';
+import helmet from 'helmet';
 
+// Rate limiting middleware
+export const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // límite de 100 solicitudes por ventana por IP
+  message: 'Demasiadas solicitudes desde esta IP, por favor intente de nuevo más tarde.'
+});
+
+// CSRF protection middleware
+export const csrfProtection = csrf({ 
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: true
+  } 
+});
+
+// Security headers middleware
 export const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
-      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'style-src': ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
-      'font-src': ["'self'", 'fonts.gstatic.com'],
-      'script-src': ["'self'", "'unsafe-inline'"], // Eliminamos replit.com ya que no es necesario en producción
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com"],
     },
   },
+  crossOriginEmbedderPolicy: false,
 });
-
-export const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-export const csrfProtection = csurf({ cookie: true });

@@ -3,13 +3,8 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { limiter, csrfProtection, securityHeaders } from "./middleware/security";
-import { setupSwagger } from "./utils/swagger";
 
 const app = express();
-
-import { config } from "./config";
-
-console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
 
 // Aplicar medidas de seguridad
 app.use(securityHeaders);
@@ -17,20 +12,14 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Import connect-pg-simple
-import connectPgSimple from 'connect-pg-simple';
-import { pool } from './db';
+// Aplicar CSRF protection a todas las rutas /api
+app.use('/api', csrfProtection);
 
-// Configurar sesión con PostgreSQL
-const PostgresqlStore = connectPgSimple(session);
+import { config } from "./config";
+
+console.log(`🌍 Environment: ${config.isProduction ? 'production' : 'development'}, Deployment: ${config.isDeployment}, HTTPS: ${config.isHTTPS}`);
 
 app.use(session({
-  store: new PostgresqlStore({
-    pool: pool,
-    tableName: 'session', // Nombre de la tabla para las sesiones
-    createTableIfMissing: true, // Crear la tabla si no existe
-    pruneSessionInterval: 60 * 60 // Limpiar sesiones expiradas cada hora
-  }),
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
@@ -43,14 +32,6 @@ app.use(session({
   },
   name: 'financetracker.sid',
 }));
-
-// Aplicar CSRF protection a todas las rutas /api
-app.use('/api', csrfProtection);
-
-// Configurar Swagger
-if (process.env.NODE_ENV === 'development') {
-  setupSwagger(app);
-}
 
 // Validar variables de entorno
 import { validateEnv } from './utils/validation';
@@ -112,5 +93,5 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log.info(`Server started on port ${port}`);
-  });
+  });// Final version
 })();
