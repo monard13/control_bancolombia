@@ -73,7 +73,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
   const uploadReceiptMutation = useMutation({
     mutationFn: async (file: File) => {
       // Get upload URL
-      const uploadResponse = await fetch('/api/objects/upload', { method: 'POST' });
+      const uploadResponse = await apiRequest('POST', '/api/objects/upload');
       const { uploadURL } = await uploadResponse.json();
 
       // Upload file to object storage
@@ -90,12 +90,7 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
 
   const createTransactionMutation = useMutation({
     mutationFn: async (data: InsertTransaction & { receiptUrl?: string }) => {
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to create transaction');
+      const response = await apiRequest('POST', '/api/transactions', data);
       return response.json();
     },
     onSuccess: () => {
