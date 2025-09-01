@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from 'cookie-parser';
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
@@ -19,6 +20,7 @@ app.use(securityHeaders);
 app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(cookieParser());
 
 // Configurar sesión con PostgreSQL ANTES de CSRF
 const PostgresqlStore = connectPgSimple(session);
