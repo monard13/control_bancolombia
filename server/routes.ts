@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Return the processed data
-        res.json({
+        return res.json({
           extractedData,
           ocrText,
           aiAvailable,
@@ -479,15 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
-        extractedData,
-        ocrText,
-        aiAvailable,
-        receiptUrl: objectPath,
-        message: aiAvailable 
-          ? "Receipt processed successfully with AI analysis"
-          : "Receipt processed with OCR only - AI analysis unavailable (check OpenAI credits)"
-      });
+      // Note: success path already returned above
 
     } catch (error) {
       console.error('Error processing receipt:', error);
