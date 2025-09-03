@@ -33,7 +33,7 @@ This project can store receipts in Object Storage and generate signed URLs.
   - `PUBLIC_OBJECT_SEARCH_PATHS` (e.g. `/my-bucket/public`)
 
 - Render/Other hosts: use Google Cloud Storage service account credentials. Define:
-  - `GCS_SERVICE_ACCOUNT_JSON` – the entire JSON of your service account (paste the JSON text as the value)
+  - `GCS_SERVICE_ACCOUNT_JSON` – the entire JSON of your service account (paste the JSON text as the value). If your dashboard mangles newlines, use `GCS_SERVICE_ACCOUNT_JSON_B64` with the base64 of the JSON instead.
   - `PRIVATE_OBJECT_DIR` – path like `/<bucket>/<private-prefix>` with leading slash
   - `PUBLIC_OBJECT_SEARCH_PATHS` – one or more `/<bucket>/<public-prefix>` paths, comma‑separated
 

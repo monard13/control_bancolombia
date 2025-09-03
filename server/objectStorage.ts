@@ -13,14 +13,19 @@ const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
 // Create storage client. Prefer explicit GCS service account credentials when available
 function createStorageClient(): Storage {
+  // Accept plain JSON or base64-encoded JSON
   const saJson = process.env.GCS_SERVICE_ACCOUNT_JSON;
-  if (saJson) {
+  const saJsonB64 = process.env.GCS_SERVICE_ACCOUNT_JSON_B64;
+  let parsed: any | null = null;
+  if (saJson || saJsonB64) {
     try {
-      const creds = JSON.parse(saJson);
+      const raw = saJson ?? Buffer.from(saJsonB64 as string, "base64").toString("utf8");
+      const creds = JSON.parse(raw);
       const projectId = creds.project_id || process.env.GOOGLE_CLOUD_PROJECT || "";
-      return new Storage({ credentials: creds, projectId });
+      parsed = creds;
+      return new Storage({ credentials: parsed, projectId });
     } catch (e) {
-      console.error("Invalid GCS_SERVICE_ACCOUNT_JSON; falling back to sidecar:", e);
+      console.error("Invalid GCS service account JSON; falling back to sidecar:", e);
     }
   }
 
