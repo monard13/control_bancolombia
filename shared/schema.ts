@@ -52,22 +52,34 @@ export const loginSchema = z.object({
   password: z.string().min(1, "La contraseña es requerida"),
 });
 
-export const insertTransactionSchema = createInsertSchema(transactions).pick({
-  type: true,
-  amount: true,
-  description: true,
-  date: true,
-  receiptUrl: true,
-  extractedData: true,
-  confidence: true,
-  reconciled: true,
-}).extend({
-  type: z.enum(['income', 'expense']),
-  date: z.union([
-    z.string().transform((val) => new Date(val)),
-    z.date()
-  ]).optional(),
-});
+export const insertTransactionSchema = createInsertSchema(transactions)
+  .pick({
+    type: true,
+    amount: true,
+    description: true,
+    date: true,
+    receiptUrl: true,
+    extractedData: true,
+    confidence: true,
+    reconciled: true,
+  })
+  .extend({
+    // Accept both Spanish labels and internal values; normalize to 'income' | 'expense'
+    type: z
+      .union([
+        z.enum(['income', 'expense']),
+        z.enum(['INGRESO', 'EGRESO']),
+      ])
+      .transform((val) =>
+        val === 'INGRESO' || val === 'income' ? 'income' : 'expense'
+      ),
+    date: z
+      .union([
+        z.string().transform((val) => new Date(val)),
+        z.date(),
+      ])
+      .optional(),
+  });
 
 export const transactionFilterSchema = z.object({
   type: z.enum(['income', 'expense', 'all']).optional(),

@@ -11,7 +11,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   // Transaction methods
-  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  createTransaction(transaction: InsertTransaction & { userId: string }): Promise<Transaction>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   getTransactions(filters?: {
     type?: 'income' | 'expense';
@@ -55,7 +55,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
+  async createTransaction(insertTransaction: InsertTransaction & { userId: string }): Promise<Transaction> {
+    if (!insertTransaction.userId) {
+      throw new Error('User ID is required to create a transaction');
+    }
     const [transaction] = await db
       .insert(transactions)
       .values({

@@ -253,18 +253,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/transactions", requireAuth, async (req, res) => {
     try {
       const transactionData = insertTransactionSchema.parse(req.body);
-      
+
       // If there's a receiptUrl, normalize it to the proper object path
       if (transactionData.receiptUrl) {
         const objectStorageService = new ObjectStorageService();
         transactionData.receiptUrl = objectStorageService.normalizeObjectEntityPath(transactionData.receiptUrl);
       }
-      
+      // Ensure we persist the authenticated user on the record
       const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      
+
       const transaction = await storage.createTransaction({
         ...transactionData,
         userId,

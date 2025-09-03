@@ -6,6 +6,8 @@ export const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      // Allow local blob previews and specific domains for images
+      'img-src': ["'self'", 'data:', 'blob:', 'https://control-bancolombia.onrender.com', 'https://*.bancolombia.com'],
       'style-src': ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
       'font-src': ["'self'", 'fonts.gstatic.com'],
     },
