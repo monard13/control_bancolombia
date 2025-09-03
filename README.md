@@ -24,6 +24,21 @@ Copy `.env.example` to `.env` and fill in values for your deployment:
 - `CACHE_TTL`, `CACHE_CHECK_PERIOD` – in-memory cache settings
 - `LOG_LEVEL`, `LOG_FILE_PATH` – logging configuration
 
+### Object Storage
+
+This project can store receipts in Object Storage and generate signed URLs.
+
+- Replit: use the built-in Object Storage tool. Define:
+  - `PRIVATE_OBJECT_DIR` (e.g. `/my-bucket/private`)
+  - `PUBLIC_OBJECT_SEARCH_PATHS` (e.g. `/my-bucket/public`)
+
+- Render/Other hosts: use Google Cloud Storage service account credentials. Define:
+  - `GCS_SERVICE_ACCOUNT_JSON` – the entire JSON of your service account (paste the JSON text as the value)
+  - `PRIVATE_OBJECT_DIR` – path like `/<bucket>/<private-prefix>` with leading slash
+  - `PUBLIC_OBJECT_SEARCH_PATHS` – one or more `/<bucket>/<public-prefix>` paths, comma‑separated
+
+If `GCS_SERVICE_ACCOUNT_JSON` is present, the server signs URLs using GCS (V4). If not present and not on Replit, the app will skip object storage but still process OCR with a graceful fallback.
+
 ## Scripts
 
 - `npm run dev` – start development server
@@ -60,4 +75,3 @@ npm test
 ```
 
 for the full suite including server middleware tests.
-
