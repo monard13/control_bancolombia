@@ -51,12 +51,21 @@ export default function UploadReceipt({ userRole }: UploadReceiptProps) {
         },
       });
 
+      const tryParseJson = async () => {
+        try {
+          return await response.clone().json();
+        } catch {
+          const text = await response.text();
+          throw new Error(text || 'Upload failed');
+        }
+      };
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Upload failed');
+        const error = await tryParseJson();
+        throw new Error((error && (error.error || error.message)) || 'Upload failed');
       }
 
-      return response.json();
+      return tryParseJson();
     },
     onSuccess: (result, file) => {
       setExtractedData(result.extractedData);
