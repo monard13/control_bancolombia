@@ -301,7 +301,7 @@ async function signObjectURL({
       version: "v4",
       action: actionMap[method],
       expires: Date.now() + ttlSec * 1000,
-      contentType: method === "PUT" ? "application/octet-stream" : undefined,
+      // Do not constrain contentType so clients can upload with their own
     });
     return url;
   }
