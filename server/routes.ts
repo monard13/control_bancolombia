@@ -260,7 +260,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transactionData.receiptUrl = objectStorageService.normalizeObjectEntityPath(transactionData.receiptUrl);
       }
       
-      const transaction = await storage.createTransaction(transactionData);
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      const transaction = await storage.createTransaction({
+        ...transactionData,
+        userId,
+      });
       res.status(201).json(transaction);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -355,77 +363,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let imageBuffer = req.file.buffer;
-
-      // Convert PDF to image if needed (simplified - in production would need pdf-poppler)
-      if (req.file.mimetype === 'application/pdf') {
-        return res.status(400).json({ error: "PDF processing not implemented yet" });
-      }
-
-      // Ensure image is in a format that OCR can process
-      imageBuffer = await sharp(imageBuffer)
-        .jpeg({ quality: 90 })
-        .toBuffer();
-
-      // Store the image in object storage for receipt keeping (optional)
-      let receiptUrl: string | null = null;
-      try {
-        const objectStorageService = new ObjectStorageService();
-        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-
-        // Upload to object storage using the presigned URL
-        const uploadResponse = await fetch(uploadURL, {
-          method: 'PUT',
-          body: imageBuffer,
-          headers: {
-            'Content-Type': 'image/jpeg',
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          console.error('Failed to upload to object storage:', uploadResponse.statusText);
-        } else {
-          // Get the object path from the upload URL for later reference
-          receiptUrl = objectStorageService.normalizeObjectEntityPath(uploadURL);
-        }
-      } catch (storageError) {
-        // If object storage is not configured or unavailable, log and continue
-        console.error('Object storage unavailable:', storageError);
-      }
-
-      // Extract text using OCR
-      const ocrText = await ocrService.processImage(imageBuffer);
-      
-      if (!ocrText.trim()) {
-        return res.status(400).json({ error: "No text could be extracted from the image" });
-      }
-
-      // Extract structured data using AI (with fallback)
+      let originalMimetype = req.file.mimetype;
+      let ocrImage: Buffer;
+      let objectPath: string | null = null;
+      let ocrText = '';
       let extractedData;
       let aiAvailable = true;
-      
+
       try {
-        extractedData = await aiService.extractTransactionData(ocrText);
-      } catch (aiError) {
-        console.log('AI service unavailable, falling back to OCR-only mode:', aiError instanceof Error ? aiError.message : String(aiError));
-        aiAvailable = false;
+        console.log(`Processing ${originalMimetype} file of size ${imageBuffer.length} bytes`);
+
+        // Convert PDF to image if needed
+        if (originalMimetype === 'application/pdf') {
+          try {
+            // Use Sharp's built-in PDF processing (first page only)
+            ocrImage = await sharp(imageBuffer, { density: 300 })
+              .jpeg({ quality: 90 })
+              .toBuffer();
+            console.log('Successfully converted PDF to image');
+          } catch (pdfError) {
+            console.error('PDF conversion failed:', pdfError);
+            return res.status(400).json({ 
+              error: "Could not process PDF file. Please convert to image format first." 
+            });
+          }
+        } else {
+          // Process regular image
+          ocrImage = await sharp(imageBuffer)
+            .jpeg({ quality: 90 })
+            .toBuffer();
+        }
+
+        // Store original file and processed image in object storage
+        const objectStorageService = new ObjectStorageService();
+
+        try {
+          // Get upload URL
+          const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+          
+          // Convert buffer to Uint8Array for upload
+          const uint8Array = new Uint8Array(ocrImage);
+          
+          // Upload processed image for OCR
+          const uploadResponse = await fetch(uploadURL, {
+            method: 'PUT',
+            body: uint8Array,
+            headers: {
+              'Content-Type': 'image/jpeg',
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+          }
+
+          // Store path for later reference
+          objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+          console.log('File uploaded successfully to:', objectPath);
+
+        } catch (storageError) {
+          console.error('Object storage error:', storageError);
+          // Continue with processing even if storage fails
+          console.log('Continuing with OCR processing despite storage error');
+        }
+
+        // Extract text using OCR
+        console.log('Starting OCR processing...');
+        ocrText = await ocrService.processImage(ocrImage);
         
-        // Fallback: provide basic structure with OCR text
-        extractedData = {
-          amount: null,
-          description: ocrText.substring(0, 100), // First 100 chars as description
-          category: 'EGRESO', // Default to expense for most receipts
-          date: new Date().toISOString().split('T')[0],
-          vendor: '',
-          confidence: 0.5, // Medium confidence since it's OCR-only
-          rawText: ocrText
-        };
+        if (!ocrText.trim()) {
+          return res.status(400).json({ error: "No text could be extracted from the image" });
+        }
+        console.log(`OCR extracted ${ocrText.length} characters`);
+
+        // Extract structured data using AI (with fallback)
+        try {
+          console.log('Starting AI analysis...');
+          extractedData = await aiService.extractTransactionData(ocrText);
+          console.log('AI analysis completed successfully');
+        } catch (aiError) {
+          console.log('AI service unavailable, falling back to OCR-only mode:', 
+            aiError instanceof Error ? aiError.message : String(aiError)
+          );
+          aiAvailable = false;
+          
+          // Fallback: provide basic structure with OCR text
+          extractedData = {
+            amount: null,
+            description: ocrText.substring(0, 100), // First 100 chars as description
+            category: 'EGRESO', // Default to expense for most receipts
+            date: new Date().toISOString().split('T')[0],
+            vendor: '',
+            confidence: 0.5, // Medium confidence since it's OCR-only
+            rawText: ocrText
+          };
+          console.log('Created fallback data structure');
+        }
+        
+        // Return the processed data
+        res.json({
+          extractedData,
+          ocrText,
+          aiAvailable,
+          receiptUrl: objectPath,
+          message: aiAvailable 
+            ? "Receipt processed successfully with AI analysis"
+            : "Receipt processed with OCR only - AI analysis unavailable"
+        });
+
+      } catch (error) {
+        console.error('Error processing receipt:', error);
+        res.status(500).json({ 
+          error: "Failed to process receipt",
+          details: error instanceof Error ? error.message : String(error)
+        });
       }
 
       res.json({
         extractedData,
         ocrText,
         aiAvailable,
-        receiptUrl,
+        receiptUrl: objectPath,
         message: aiAvailable 
           ? "Receipt processed successfully with AI analysis"
           : "Receipt processed with OCR only - AI analysis unavailable (check OpenAI credits)"
@@ -464,4 +522,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-

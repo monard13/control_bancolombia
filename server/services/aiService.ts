@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { ExtractedData } from "@shared/schema";
+import { z } from "zod";
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY environment variable is required');
 }
@@ -10,11 +10,77 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-export class AIService {
-  async extractTransactionData(ocrText: string): Promise<ExtractedData> {
+const ExtractedDataSchema = z.object({
+  amount: z.union([z.number(), z.null()]).transform(val => val === null ? undefined : val),
+  description: z.string(),
+  category: z.string(),
+  date: z.union([z.string(), z.null()]).transform(val => val === null ? undefined : val),
+  vendor: z.string(),
+  confidence: z.number().min(0).max(1),
+  rawText: z.string()
+}).transform((data): ExtractedData => ({
+  ...data,
+  amount: data.amount === null ? undefined : data.amount,
+  date: data.date === null ? undefined : data.date
+}));
+
+class AIService {
+  private readonly incomeKeywords = [
+    'salary', 'salario', 'sueldo', 'freelance', 
+    'investment', 'inversion', 'income', 'ingreso', 
+    'pago', 'cobro'
+  ];
+
+  private async classifyCategory(text: string): Promise<'INGRESO' | 'EGRESO'> {
+    const normalizedText = text.toLowerCase();
+    return this.incomeKeywords.some(keyword => normalizedText.includes(keyword))
+      ? 'INGRESO'
+      : 'EGRESO';
+  }
+
+  private async validateData(data: unknown): Promise<ExtractedData> {
     try {
+      return ExtractedDataSchema.parse(data);
+    } catch (error) {
+      console.error('Data validation error:', error);
+      throw new Error('Invalid data format received from AI');
+    }
+  }
+
+  private async retryWithExponentialBackoff<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelay: number = 1000
+  ): Promise<T> {
+    let attempt = 0;
+    let lastError: Error | null = null;
+
+    while (attempt < maxRetries) {
+      try {
+        console.log(`Processing attempt ${attempt + 1}/${maxRetries}`);
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Error in attempt ${attempt + 1}:`, lastError.message);
+        
+        attempt++;
+        if (attempt === maxRetries) break;
+
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(`Retrying after ${delay}ms delay`);
+      }
+    }
+
+    throw lastError || new Error('Maximum retries exceeded');
+  }
+
+  async extractTransactionData(ocrText: string): Promise<ExtractedData> {
+    return this.retryWithExponentialBackoff(async () => {
+      console.log('Starting AI processing for text length:', ocrText.length);
+      
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -45,39 +111,22 @@ export class AIService {
           }
         ],
         response_format: { type: "json_object" },
+        temperature: 0.3,
+        max_tokens: 500
       });
 
-      const extractedData = JSON.parse(response.choices[0].message.content || '{}');
+      const rawData = JSON.parse(response.choices[0].message.content || '{}');
+      const category = await this.classifyCategory(rawData.category || rawData.description || '');
       
-      return {
-        amount: extractedData.amount || null,
-        description: extractedData.description || '',
-        category: this.mapToValidCategory(extractedData.category),
-        date: extractedData.date || null,
-        vendor: extractedData.vendor || '',
-        confidence: Math.max(0, Math.min(1, extractedData.confidence || 0)),
+      const extractedData = await this.validateData({
+        ...rawData,
+        category,
         rawText: ocrText
-      };
-    } catch (error) {
-      console.error('AI processing error:', error);
-      throw new Error('Failed to process receipt data with AI');
-    }
-  }
+      });
 
-  private mapToValidCategory(category: string): string {
-    // Map various terms to our simplified categories
-    const incomeKeywords = ['salary', 'salario', 'sueldo', 'freelance', 'investment', 'inversion', 'income', 'ingreso', 'pago', 'cobro'];
-    const expenseKeywords = ['food', 'alimentacion', 'comida', 'transport', 'transporte', 'utilities', 'servicios', 'entertainment', 'entretenimiento', 'healthcare', 'salud', 'expense', 'egreso', 'gasto', 'compra'];
-
-    const normalizedCategory = category?.toLowerCase() || '';
-    
-    // Check if it's an income-related term
-    if (incomeKeywords.some(keyword => normalizedCategory.includes(keyword))) {
-      return 'INGRESO';
-    }
-    
-    // Default to expense for most transactions (receipts are typically expenses)
-    return 'EGRESO';
+      console.log('Data extracted and validated successfully');
+      return extractedData;
+    });
   }
 }
 
