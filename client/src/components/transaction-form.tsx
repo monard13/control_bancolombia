@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { insertTransactionSchema, type InsertTransaction } from "@shared/schema";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getCsrfToken } from "@/lib/queryClient";
 import { Save, X, Upload, FileText } from "lucide-react";
 
 const categories = {
@@ -71,20 +71,47 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
   });
 
   const uploadReceiptMutation = useMutation({
-    mutationFn: async (file: File) => {
-      // Get upload URL
-      const uploadResponse = await apiRequest('POST', '/api/objects/upload');
-      const { uploadURL } = await uploadResponse.json();
+    mutationFn: async (file: File): Promise<string | null> => {
+      // First try: use signed URL flow (Object Storage)
+      try {
+        const uploadResponse = await apiRequest('POST', '/api/objects/upload');
+        const { uploadURL } = await uploadResponse.json();
+        if (!uploadURL) throw new Error('No upload URL provided');
 
-      // Upload file to object storage
-      const putResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
+        const putResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+        if (!putResponse.ok) throw new Error('Failed to upload receipt');
+        return uploadURL as string;
+      } catch (e) {
+        // Fallback: send the file to the receipt upload endpoint which tolerates
+        // missing Object Storage and returns a normalized receiptUrl or null
+        const formData = new FormData();
+        formData.append('receipt', file);
+        const token = await getCsrfToken();
+        const response = await fetch('/api/receipts/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': token },
+        });
 
-      if (!putResponse.ok) throw new Error('Failed to upload receipt');
-      return uploadURL;
+        // Try parse JSON or surface textual error
+        let data: any = null;
+        try {
+          data = await response.clone().json();
+        } catch {
+          const text = await response.text();
+          throw new Error(text || 'Receipt upload failed');
+        }
+
+        if (!response.ok) {
+          throw new Error(data?.error || 'Receipt upload failed');
+        }
+        return (data && data.receiptUrl) || null;
+      }
     },
   });
 
@@ -125,14 +152,14 @@ export function TransactionForm({ initialData, onCancel }: TransactionFormProps)
 
     setIsUploadingReceipt(true);
     try {
-      // First upload the receipt
+      // First upload the receipt (with fallback)
       const receiptUrl = await uploadReceiptMutation.mutateAsync(receiptFile);
       
       // Convert form data to InsertTransaction format
       const transactionData: InsertTransaction = {
         ...data,
         date: new Date(data.date), // Convert string to Date for API
-        receiptUrl: receiptUrl, // Send the full upload URL, backend will normalize it
+        receiptUrl: receiptUrl || undefined, // backend will normalize if present
       };
       
       // Then create the transaction with the receipt URL and auto-assigned category
